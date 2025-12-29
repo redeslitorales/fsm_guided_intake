@@ -23,7 +23,9 @@
 
                     <group invisible='state != "customer"'>
                         <field name="partner_id" options="{'no_create': False}"/>
-                        <field name="service_address_id" options="{'no_create': False}"/>
+                        <field name="show_service_address" invisible="1"/>
+                        <field name="service_address_id" options="{'no_create': False}"
+                               invisible="not show_service_address"/>
                         <label for="service_address_id" string="Warnings" colspan="2"/>
                         <div class="alert alert-warning" invisible="not warning_customer_phone_missing">
                             Customer is missing a phone number.
@@ -33,11 +35,11 @@
                         </div>
                     </group>
 
-                    <group invisible='state != "products"'>
+                    <group invisible='state != "products"' col="1">
                         <div class="alert alert-info" invisible="not require_products">
                             This task type requires at least one product/service line.
                         </div>
-                        <field name="line_ids">
+                        <field name="line_ids" nolabel="1">
                             <tree editable="bottom">
                                 <field name="product_id"/>
                                 <field name="quantity"/>
