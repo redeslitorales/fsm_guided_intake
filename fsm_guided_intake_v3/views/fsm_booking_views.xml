@@ -39,10 +39,9 @@
                     </group>
                     <footer>
                         <button name="action_create_or_update_delivery" type="object" string="Create/Reserve Delivery" class="btn-primary"
-                                invisible='state != "confirmed"'/>
+                                attrs="{'invisible':[('state','!=','confirmed')]}"/>
                         <button name="action_cancel" type="object" string="Cancel Booking" class="btn-secondary"
-                                invisible='state == "cancelled"'/>
-
+                                attrs="{'invisible':[('state','=','cancelled')]}"/>
                     </footer>
                 </sheet>
             </form>

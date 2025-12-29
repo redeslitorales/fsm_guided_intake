@@ -8,33 +8,27 @@
                 <sheet>
                     <group>
                         <field name="state" invisible="1"/>
-                        <field name="require_products" invisible="1"/>
-                        <field name="warning_customer_phone_missing" invisible="1"/>
-                        <field name="warning_no_service_address" invisible="1"/>
-                        <field name="warning_missing_serials" invisible="1"/>
-                        <field name="warning_task_type_mapping" invisible="1"/>
-                        <field name="warning_planned_hours_zero" invisible="1"/>
                     </group>
 
-                    <group invisible='state != "type"'>
+                    <group attrs="{'invisible':[('state','!=','type')]}">
                         <field name="task_type_id" options="{'no_create': False}"/>
                         <field name="planned_hours"/>
                     </group>
 
-                    <group invisible='state != "customer"'>
+                    <group attrs="{'invisible':[('state','!=','customer')]}">
                         <field name="partner_id" options="{'no_create': False}"/>
                         <field name="service_address_id" options="{'no_create': False}"/>
-                        <label for="service_address_id" string="Warnings" colspan="2"/>
-                        <div class="alert alert-warning" invisible="not warning_customer_phone_missing">
+                        <label string="Warnings" colspan="2"/>
+                        <div class="alert alert-warning" attrs="{'invisible':[('warning_customer_phone_missing','=',False)]}">
                             Customer is missing a phone number.
                         </div>
-                        <div class="alert alert-warning" invisible="not warning_no_service_address">
+                        <div class="alert alert-warning" attrs="{'invisible':[('warning_no_service_address','=',False)]}">
                             No service address selected.
                         </div>
                     </group>
 
-                    <group invisible='state != "products"'>
-                        <div class="alert alert-info" invisible="not require_products">
+                    <group attrs="{'invisible':[('state','!=','products')]}">
+                        <div class="alert alert-info" attrs="{'invisible':[('require_products','=',False)]}">
                             This task type requires at least one product/service line.
                         </div>
                         <field name="line_ids">
@@ -45,40 +39,40 @@
                                 <field name="lot_ids" widget="many2many_tags"/>
                             </tree>
                         </field>
-                        <div class="alert alert-warning" invisible="not warning_missing_serials">
+                        <div class="alert alert-warning" attrs="{'invisible':[('warning_missing_serials','=',False)]}">
                             One or more tracked products are missing a serial/lot number.
                         </div>
                     </group>
 
-                    <group invisible='state != "schedule"'>
+                    <group attrs="{'invisible':[('state','!=','schedule')]}">
                         <field name="team_id" options="{'no_create': False}"/>
                         <group string="Top Options">
                             <field name="selected_slot" widget="radio"/>
-                            <field name="slot1_label" readonly="1" invisible="not slot1_label"/>
-                            <field name="slot2_label" readonly="1" invisible="not slot2_label"/>
-                            <field name="slot3_label" readonly="1" invisible="not slot3_label"/>
+                            <field name="slot1_label" readonly="1" attrs="{'invisible':[('slot1_label','=',False)]}"/>
+                            <field name="slot2_label" readonly="1" attrs="{'invisible':[('slot2_label','=',False)]}"/>
+                            <field name="slot3_label" readonly="1" attrs="{'invisible':[('slot3_label','=',False)]}"/>
                             <button name="action_more_options" type="object" string="More options" class="btn-secondary"/>
                         </group>
                     </group>
 
-                    <group invisible='state != "notes"'>
+                    <group attrs="{'invisible':[('state','!=','notes')]}">
                         <field name="notes" placeholder="Internal notes for technicians..."/>
                     </group>
 
-                    <group invisible='state != "confirm"'>
-                        <div class="alert alert-warning" invisible="not warning_task_type_mapping">
+                    <group attrs="{'invisible':[('state','!=','confirm')]}">
+                        <div class="alert alert-warning" attrs="{'invisible':[('warning_task_type_mapping','=',False)]}">
                             Task type is missing a project mapping.
                         </div>
-                        <div class="alert alert-warning" invisible="not warning_planned_hours_zero">
+                        <div class="alert alert-warning" attrs="{'invisible':[('warning_planned_hours_zero','=',False)]}">
                             Planned hours is 0.
                         </div>
-                        <div class="alert alert-warning" invisible="not warning_customer_phone_missing">
+                        <div class="alert alert-warning" attrs="{'invisible':[('warning_customer_phone_missing','=',False)]}">
                             Customer is missing a phone number.
                         </div>
-                        <div class="alert alert-warning" invisible="not warning_no_service_address">
+                        <div class="alert alert-warning" attrs="{'invisible':[('warning_no_service_address','=',False)]}">
                             No service address selected.
                         </div>
-                        <div class="alert alert-warning" invisible="not warning_missing_serials">
+                        <div class="alert alert-warning" attrs="{'invisible':[('warning_missing_serials','=',False)]}">
                             Serial-tracked product(s) are missing serial/lot numbers.
                         </div>
                         <p>
@@ -90,11 +84,11 @@
                 </sheet>
                 <footer>
                     <button name="action_back" type="object" string="Back" class="btn-secondary"
-                            invisible="state == 'type'"/>
+                            attrs="{'invisible':[('state','=','type')]}"/>
                     <button name="action_next" type="object" string="Next" class="btn-primary"
-                            invisible="state == 'confirm'"/>
+                            attrs="{'invisible':[('state','=','confirm')]}"/>
                     <button name="action_create_task" type="object" string="Create Task" class="btn-primary"
-                            invisible="state != 'confirm'"/>
+                            attrs="{'invisible':[('state','!=','confirm')]}"/>
                     <button string="Cancel" special="cancel" class="btn-secondary"/>
                 </footer>
             </form>

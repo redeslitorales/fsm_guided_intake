@@ -2,7 +2,6 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 from datetime import datetime, timedelta
-import math
 
 class FsmBooking(models.Model):
     _name = "fsm.booking"
@@ -28,18 +27,21 @@ class FsmBooking(models.Model):
     def action_cancel(self):
         for rec in self:
             rec.state = "cancelled"
-            # NOTE: we do not cancel pickings automatically in v1 to avoid data-loss surprises.
+            # NOTE: we do not cancel pickings automatically in v1/v3 to avoid data-loss surprises.
 
     def _create_delivery_and_reserve(self):
         """Create an outgoing picking for the task materials and reserve stock (action_assign).
-        V1 assumptions:
+        Assumptions:
           - warehouse is taken from team.warehouse_id
           - destination is customer stock location
           - services are ignored for stock picking
+          - serial tracking uses material.lot_ids (many2many)
+          - lot tracking uses material.lot_id (many2one)
         """
         self.ensure_one()
         task = self.task_id
         team = self.team_id
+
         if not team.warehouse_id:
             raise UserError(_("Team '%s' has no warehouse set.") % team.name)
 
@@ -54,7 +56,9 @@ class FsmBooking(models.Model):
         src_loc = team.warehouse_id.lot_stock_id
         dest_loc = customer.property_stock_customer
 
-        materials = task.fsm_material_ids.filtered(lambda l: l.product_id.type in ("product", "consu") and l.product_uom_qty > 0)
+        materials = task.fsm_material_ids.filtered(
+            lambda l: l.product_id.type in ("product", "consu") and l.product_uom_qty > 0
+        )
         if not materials:
             return False
 
@@ -82,41 +86,39 @@ class FsmBooking(models.Model):
         picking.action_assign()
 
         # Apply selected serial/lot numbers as reservations where provided.
-# - For serial tracking: create one move line per selected serial in task material.lot_ids
-# - For lot tracking: use material.lot_id (single lot) if provided
-for line in materials:
-    move = picking.move_ids_without_package.filtered(lambda m: m.product_id == line.product_id)[:1]
-    if not move:
-        continue
-    tracking = move.product_id.tracking
-    if tracking == "serial":
-        lots = line.lot_ids
-        if lots:
-            for lot in lots:
-                self.env["stock.move.line"].create({
-                    "picking_id": picking.id,
-                    "move_id": move.id,
-                    "product_id": move.product_id.id,
-                    "product_uom_id": move.product_uom.id,
-                    "location_id": src_loc.id,
-                    "location_dest_id": dest_loc.id,
-                    "lot_id": lot.id,
-                    "quantity": 1.0,
-                })
-    elif tracking == "lot":
-        if line.lot_id:
-            self.env["stock.move.line"].create({
-                "picking_id": picking.id,
-                "move_id": move.id,
-                "product_id": move.product_id.id,
-                "product_uom_id": move.product_uom.id,
-                "location_id": src_loc.id,
-                "location_dest_id": dest_loc.id,
-                "lot_id": line.lot_id.id,
-                "quantity": min(line.product_uom_qty, move.product_uom_qty),
-            })
-self.picking_id = picking.id
+        for line in materials:
+            move = picking.move_ids_without_package.filtered(lambda m: m.product_id == line.product_id)[:1]
+            if not move:
+                continue
+            tracking = move.product_id.tracking
+            if tracking == "serial":
+                lots = line.lot_ids
+                if lots:
+                    for lot in lots:
+                        self.env["stock.move.line"].create({
+                            "picking_id": picking.id,
+                            "move_id": move.id,
+                            "product_id": move.product_id.id,
+                            "product_uom_id": move.product_uom.id,
+                            "location_id": src_loc.id,
+                            "location_dest_id": dest_loc.id,
+                            "lot_id": lot.id,
+                            "quantity": 1.0,
+                        })
+            elif tracking == "lot":
+                if line.lot_id:
+                    self.env["stock.move.line"].create({
+                        "picking_id": picking.id,
+                        "move_id": move.id,
+                        "product_id": move.product_id.id,
+                        "product_uom_id": move.product_uom.id,
+                        "location_id": src_loc.id,
+                        "location_dest_id": dest_loc.id,
+                        "lot_id": line.lot_id.id,
+                        "quantity": min(line.product_uom_qty, move.product_uom_qty),
+                    })
 
+        self.picking_id = picking.id
         return picking
 
     def action_create_or_update_delivery(self):

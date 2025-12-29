@@ -31,28 +31,29 @@ class ProjectTask(models.Model):
     fsm_material_ids = fields.One2many("fsm.task.material", "task_id", string="Materials/Services", copy=False)
     fsm_invoiced = fields.Boolean(string="FSM Invoiced", default=False, copy=False)
     fsm_last_invoiced_so_id = fields.Many2one("sale.order", string="Last Invoiced SO", copy=False)
+
     # quick helper: mark done button to create invoice later (v1: just creates SO if absent)
 
-    def _fsm_create_draft_invoice(self):
-        """Create/Update SO from task materials and create a draft invoice (account.move).
-        This does NOT post the invoice. It marks task as fsm_invoiced to avoid duplicates.
-        """
-        AccountMove = self.env["account.move"]
-        for task in self:
-            if task.fsm_invoiced:
-                continue
-            # Prepare SO lines
-            task.action_fsm_prepare_invoice()
-            so = task.sale_order_id
-            if not so:
-                continue
-            # Create draft invoice from SO
-            inv = so._create_invoices()
-            if inv:
-                # leave draft; do not post
-                task.fsm_invoiced = True
-                task.fsm_last_invoiced_so_id = so.id
-        return True
+def _fsm_create_draft_invoice(self):
+    """Create/Update SO from task materials and create a draft invoice (account.move).
+    This does NOT post the invoice. It marks task as fsm_invoiced to avoid duplicates.
+    """
+    AccountMove = self.env["account.move"]
+    for task in self:
+        if task.fsm_invoiced:
+            continue
+        # Prepare SO lines
+        task.action_fsm_prepare_invoice()
+        so = task.sale_order_id
+        if not so:
+            continue
+        # Create draft invoice from SO
+        inv = so._create_invoices()
+        if inv:
+            # leave draft; do not post
+            task.fsm_invoiced = True
+            task.fsm_last_invoiced_so_id = so.id
+    return True
 
     def action_fsm_prepare_invoice(self):
         """V1: Create/Update a Sales Order linked to the task partner with task materials.
@@ -78,38 +79,33 @@ class ProjectTask(models.Model):
                 })
         return True
 
-    def write(self, vals):
-        res = super().write(vals)
-        if "stage_id" in vals:
-            auto = self.env["ir.config_parameter"].sudo().get_param("fsm_guided_intake.auto_invoice_on_stage_done", default="False")
-            stage_name = (self.env["ir.config_parameter"].sudo().get_param("fsm_guided_intake.invoice_stage_done_name", default="Done") or "Done").strip().lower()
-            if auto in ("True", True, "1", 1):
-                for task in self:
-                    if task.fsm_invoiced:
-                        continue
-                    if task.stage_id and (task.stage_id.name or "").strip().lower() == stage_name:
-                        # Only invoice once, and only if there are materials/services
-                        if task.fsm_material_ids:
-                            task._fsm_create_draft_invoice()
-        return res
 
-    @api.model
-    def _fsm_cron_auto_invoice_done_tasks(self):
+def write(self, vals):
+    res = super().write(vals)
+    if "stage_id" in vals:
         auto = self.env["ir.config_parameter"].sudo().get_param("fsm_guided_intake.auto_invoice_on_stage_done", default="False")
         stage_name = (self.env["ir.config_parameter"].sudo().get_param("fsm_guided_intake.invoice_stage_done_name", default="Done") or "Done").strip().lower()
-        if auto not in ("True", True, "1", 1):
-            return True
-        done_stages = self.env["project.task.type"].search([("name", "ilike", stage_name)])
-        if not done_stages:
-            return True
-        tasks = self.search([("stage_id", "in", done_stages.ids), ("fsm_invoiced", "=", False)])
-        for t in tasks:
-            if t.fsm_material_ids:
-                t._fsm_create_draft_invoice()
-        return True
+        if auto in ("True", True, "1", 1):
+            for task in self:
+                if task.fsm_invoiced:
+                    continue
+                if task.stage_id and (task.stage_id.name or "").strip().lower() == stage_name:
+                    # Only invoice once, and only if there are materials/services
+                    if task.fsm_material_ids:
+                        task._fsm_create_draft_invoice()
+    return res
 
-    def send_whatsapp(self):
-        """Stub method to satisfy enterprise FSM view validation.
-        The actual WhatsApp sending may be provided by a separate integration module.
-        """
+@api.model
+def _fsm_cron_auto_invoice_done_tasks(self):
+    auto = self.env["ir.config_parameter"].sudo().get_param("fsm_guided_intake.auto_invoice_on_stage_done", default="False")
+    stage_name = (self.env["ir.config_parameter"].sudo().get_param("fsm_guided_intake.invoice_stage_done_name", default="Done") or "Done").strip().lower()
+    if auto not in ("True", True, "1", 1):
         return True
+    done_stages = self.env["project.task.type"].search([("name", "ilike", stage_name)])
+    if not done_stages:
+        return True
+    tasks = self.search([("stage_id", "in", done_stages.ids), ("fsm_invoiced", "=", False)])
+    for t in tasks:
+        if t.fsm_material_ids:
+            t._fsm_create_draft_invoice()
+    return True

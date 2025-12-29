@@ -60,6 +60,6 @@
         <field name="view_mode">tree,form</field>
     </record>
 
-    <menuitem id="menu_fsm_intake_root" name="FSM Intake" parent="industry_fsm.fsm_menu_root" sequence="10" groups="fsm_guided_intake.group_fsm_intake_user"/>
+    <menuitem id="menu_fsm_intake_root" name="FSM Intake" sequence="10" groups="fsm_guided_intake.group_fsm_intake_user"/>
     <menuitem id="menu_fsm_task_type" name="Task Types" parent="menu_fsm_intake_root" action="action_fsm_task_type" sequence="20"/>
 </odoo>

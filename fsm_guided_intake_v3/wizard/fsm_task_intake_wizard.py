@@ -23,21 +23,22 @@ class FsmTaskIntakeWizardLine(models.TransientModel):
     tracking = fields.Selection(related="product_id.tracking", readonly=True)
     is_service = fields.Boolean(compute="_compute_is_service", store=False)
 
-    @api.onchange("lot_ids", "product_id")
-    def _onchange_lot_ids(self):
-        for rec in self:
-            if rec.product_id and rec.product_id.tracking == "serial" and rec.lot_ids:
-                rec.quantity = len(rec.lot_ids)
+@api.onchange("lot_ids", "product_id")
+def _onchange_lot_ids(self):
+    for rec in self:
+        if rec.product_id and rec.product_id.tracking == "serial" and rec.lot_ids:
+            rec.quantity = len(rec.lot_ids)
 
-    @api.onchange("quantity", "product_id")
-    def _onchange_quantity(self):
-        for rec in self:
-            if rec.product_id and rec.product_id.tracking == "serial":
-                if rec.lot_ids and len(rec.lot_ids) != int(rec.quantity or 0):
-                    rec.lot_ids = [(5, 0, 0)]
+@api.onchange("quantity", "product_id")
+def _onchange_quantity(self):
+    for rec in self:
+        if rec.product_id and rec.product_id.tracking == "serial":
+            if rec.lot_ids and len(rec.lot_ids) != int(rec.quantity or 0):
+                rec.lot_ids = [(5, 0, 0)]
 
-    @api.depends("product_id")
-    def _compute_is_service(self):
+@api.depends("product_id")
+def _compute_is_service
+(self):
         for rec in self:
             rec.is_service = rec.product_id and rec.product_id.type == "service"
 
@@ -132,11 +133,12 @@ class FsmTaskIntakeWizard(models.TransientModel):
             wiz.warning_task_type_mapping = bool(wiz.task_type_id) and not bool(wiz.task_type_id.project_id)
 
             if wiz.task_type_id and wiz.task_type_id.requires_serials:
-                serial_lines = wiz.line_ids.filtered(lambda l: l.product_id.tracking == "serial")
-                lot_lines = wiz.line_ids.filtered(lambda l: l.product_id.tracking == "lot")
-                wiz.warning_missing_serials = any(not l.lot_ids for l in serial_lines) or any(not l.lot_id for l in lot_lines)
-            else:
-                wiz.warning_missing_serials = False
+    serial_lines = wiz.line_ids.filtered(lambda l: l.product_id.tracking == "serial")
+    lot_lines = wiz.line_ids.filtered(lambda l: l.product_id.tracking == "lot")
+    wiz.warning_missing_serials = any(not l.lot_ids for l in serial_lines) or any(not l.lot_id for l in lot_lines)
+else:
+    wiz.warning_missing_serials = False
+
 
     def _preflight_errors(self):
         self.ensure_one()
@@ -151,35 +153,42 @@ class FsmTaskIntakeWizard(models.TransientModel):
             errors.append(_("No service address selected."))
         if self.task_type_id and self.task_type_id.requires_products and not self.line_ids:
             errors.append(_("This task type requires products/services, but none were added."))
-        if self.warning_missing_serials:
-            errors.append(_("Serial-tracked product(s) are missing serial/lot numbers."))
-        return errors
+if self.warning_missing_serials:
+    errors.append(_("Serial-tracked product(s) are missing serial/lot numbers."))
 
-    # --- Scheduling helpers ---
-    def _get_service_zone_name(self):
-        p = self.service_address_id or self.partner_id
-        if not p:
-            return ""
-        if hasattr(p, "service_zone_id") and p.service_zone_id:
-            return p.service_zone_id.display_name
+serial_lines = self.line_ids.filtered(lambda l: l.product_id.tracking == "serial")
+for l in serial_lines:
+    if int(l.quantity or 0) != len(l.lot_ids):
+        errors.append(_("For product '%s', quantity must match number of selected serials.") % l.product_id.display_name)
+
+return errors
+
+
+# --- Scheduling helpers ---
+def _get_service_zone_name(self):
+    p = self.service_address_id or self.partner_id
+    if not p:
         return ""
+    if hasattr(p, "service_zone_id") and p.service_zone_id:
+        return p.service_zone_id.display_name
+    return ""
 
-    def _haversine_km(self, lat1, lon1, lat2, lon2):
-        r = 6371.0
-        phi1 = math.radians(lat1)
-        phi2 = math.radians(lat2)
-        dphi = math.radians(lat2 - lat1)
-        dl = math.radians(lon2 - lon1)
-        a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dl/2)**2
-        return 2 * r * math.asin(math.sqrt(a))
+def _haversine_km(self, lat1, lon1, lat2, lon2):
+    r = 6371.0
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dl = math.radians(lon2 - lon1)
+    a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dl/2)**2
+    return 2 * r * math.asin(math.sqrt(a))
 
     def _partner_zone_key(self, partner):
-        # Prefer configured service zones if present; otherwise fall back to ZIP/city buckets.
-        if not partner:
-            return ""
-        if hasattr(partner, "service_zone_id") and partner.service_zone_id:
-            return f"ZONE:{partner.service_zone_id.id}"
-        return (partner.zip or "")[:3] or (partner.city or "").lower() or (partner.state_id.name or "").lower()
+    # Prefer configured service zones if present; otherwise fall back to ZIP/city buckets.
+    if not partner:
+        return ""
+    if hasattr(partner, "service_zone_id") and partner.service_zone_id:
+        return f"ZONE:{partner.service_zone_id.id}"
+    return (partner.zip or "")[:3] or (partner.city or "").lower() or (partner.state_id.name or "").lower()
         return (partner.zip or "")[:3] or (partner.city or "").lower() or (partner.state_id.name or "").lower()
 
     def _find_top_slots(self, start_dt, limit=3):
@@ -230,77 +239,69 @@ class FsmTaskIntakeWizard(models.TransientModel):
                     ("end_datetime",">=", day_start),
                 ])
 
-                # cluster scoring: prefer same service zone; then prefer closer geo distance when available
+                # count same-zone bookings (for clustering)
                 same_zone_count = 0
-                dist_sum = 0.0
-                dist_n = 0
-                ref_partner = (self.service_address_id or self.partner_id)
-                ref_lat = getattr(ref_partner, "partner_latitude", 0.0) or 0.0
-                ref_lng = getattr(ref_partner, "partner_longitude", 0.0) or 0.0
-
                 for b in bookings:
-                    p = b.task_id.fsm_service_address_id or b.task_id.partner_id
-                    z = self._partner_zone_key(p)
+                    p = b.task_id.partner_id
+                    addr = b.task_id.partner_id
+                    z = self._partner_zone_key(p)  # v1 uses partner only
                     if z and z == zone:
                         same_zone_count += 1
-                    lat = getattr(p, "partner_latitude", 0.0) or 0.0
-                    lng = getattr(p, "partner_longitude", 0.0) or 0.0
-                    if ref_lat and ref_lng and lat and lng:
-                        dist_sum += self._haversine_km(ref_lat, ref_lng, lat, lng)
-                        dist_n += 1
-                avg_km = (dist_sum / dist_n) if dist_n else 0.0
+
                 for shift in shifts:
-                    sh_start = datetime.combine(day, time.min) + timedelta(hours=shift.start_time)
-                    sh_end = datetime.combine(day, time.min) + timedelta(hours=shift.end_time)
+    sh_start = datetime.combine(day, time.min) + timedelta(hours=shift.start_time)
+    sh_end = datetime.combine(day, time.min) + timedelta(hours=shift.end_time)
 
-                    # Build occupied intervals within this shift for confirmed bookings
-                    intervals = []
-                    for b in bookings:
-                        overlap_start = max(b.start_datetime, sh_start)
-                        overlap_end = min(b.end_datetime, sh_end)
-                        if overlap_end > overlap_start:
-                            intervals.append((overlap_start, overlap_end))
-                    intervals.sort(key=lambda x: x[0])
+    # Build occupied intervals within this shift for confirmed bookings
+    intervals = []
+    for b in bookings:
+        overlap_start = max(b.start_datetime, sh_start)
+        overlap_end = min(b.end_datetime, sh_end)
+        if overlap_end > overlap_start:
+            intervals.append((overlap_start, overlap_end))
+    intervals.sort(key=lambda x: x[0])
 
-                    # Merge overlaps
-                    merged = []
-                    for a, b in intervals:
-                        if not merged:
-                            merged.append([a, b])
-                        else:
-                            last = merged[-1]
-                            if a <= last[1]:
-                                last[1] = max(last[1], b)
-                            else:
-                                merged.append([a, b])
+    # Merge overlaps
+    merged = []
+    for a, b in intervals:
+        if not merged:
+            merged.append([a, b])
+        else:
+            last = merged[-1]
+            if a <= last[1]:
+                last[1] = max(last[1], b)
+            else:
+                merged.append([a, b])
 
-                    # Quick capacity check (hours)
-                    booked = sum((b - a).total_seconds() / 3600.0 for a, b in merged)
-                    avail = max(0.0, shift.capacity_hours - booked)
-                    if avail + 1e-6 < total_hours:
-                        continue
+    # Quick capacity check (hours)
+    booked = sum((b - a).total_seconds() / 3600.0 for a, b in merged)
+    avail = max(0.0, shift.capacity_hours - booked)
+    if avail + 1e-6 < total_hours:
+        continue
 
-                    # Find earliest gap that fits total_hours (packing within shift)
-                    candidate_start = sh_start
-                    found = False
-                    for a, b in merged:
-                        if a > candidate_start:
-                            gap_hours = (a - candidate_start).total_seconds() / 3600.0
-                            if gap_hours + 1e-6 >= total_hours:
-                                found = True
-                                break
-                        candidate_start = max(candidate_start, b)
-                    if not found:
-                        if (sh_end - candidate_start).total_seconds() / 3600.0 + 1e-6 >= total_hours:
-                            found = True
-                        else:
-                            continue
+    # Find earliest gap that fits total_hours (packing within shift)
+    candidate_start = sh_start
+    found = False
+    for a, b in merged:
+        # gap from candidate_start to a
+        if a > candidate_start:
+            gap_hours = (a - candidate_start).total_seconds() / 3600.0
+            if gap_hours + 1e-6 >= total_hours:
+                found = True
+                break
+        candidate_start = max(candidate_start, b)
+    if not found:
+        # check tail gap
+        if (sh_end - candidate_start).total_seconds() / 3600.0 + 1e-6 >= total_hours:
+            found = True
+        else:
+            continue
 
-                    end_dt = candidate_start + timedelta(hours=total_hours)
-                    if end_dt > sh_end:
-                        continue
+    end_dt = candidate_start + timedelta(hours=total_hours)
+    if end_dt > sh_end:
+        continue
 
-                    # score: earlier is better, more same-zone is better
+    # score: earlier is better, more same-zone is better
 
                     # convert day_offset to penalty, same_zone_count to bonus
                     score = (day_offset * 1000) + (avg_km * 0.1) - (same_zone_count * 10)
@@ -448,7 +449,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
                 "product_id": l.product_id.id,
                 "product_uom_qty": l.quantity,
                 "lot_id": l.lot_id.id if l.lot_id else False,
-                "lot_ids": [(6, 0, l.lot_ids.ids)] if getattr(l, 'lot_ids', False) and l.lot_ids else False,
+                "lot_ids": [(6, 0, l.lot_ids.ids)] if l.lot_ids else False,
             })
 
         # Checklist subtasks

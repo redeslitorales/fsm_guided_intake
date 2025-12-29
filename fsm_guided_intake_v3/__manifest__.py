@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
-    "name": "FSM Guided Intake",
-    "version": "17.0.1.2.2",
+    "name": "FSM Guided Intake (v3)",
+    "version": "17.0.1.2.1",
     "category": "Services/Field Service",
     "summary": "Guided task intake wizard with task types, team capacity scheduling, and stock reservation on scheduling.",
     "depends": ["project", "industry_fsm", "stock", "sale_management", "fleet"],

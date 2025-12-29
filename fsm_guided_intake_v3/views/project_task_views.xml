@@ -7,7 +7,7 @@
         <field name="arch" type="xml">
             <xpath expr="//header" position="inside">
                 <button name="action_fsm_prepare_invoice" type="object" string="Prepare Invoice"
-                        class="btn-secondary" invisible='not partner_id'/>
+                        class="btn-secondary" attrs="{'invisible':[('partner_id','=',False)]}"/>
             </xpath>
             <xpath expr="//sheet//group" position="inside">
                 <field name="fsm_task_type_id" groups="fsm_guided_intake.group_fsm_intake_user"/>
