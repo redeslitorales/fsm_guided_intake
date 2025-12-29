@@ -452,12 +452,13 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "name": self.task_type_id.name,
             "project_id": self.task_type_id.project_id.id,
             "partner_id": self.partner_id.id,
-            "planned_hours": self.planned_hours,
             "fsm_task_type_id": self.task_type_id.id,
             "description": self.notes or "",
             "fsm_service_address_id": (self.service_address_id.id if self.service_address_id else False),
             "fsm_service_zone_name": self._get_service_zone_name(),
         }
+        if "planned_hours" in self.env["project.task"]._fields:
+            task_vals["planned_hours"] = self.planned_hours
         if self.task_type_id.default_stage_id:
             task_vals["stage_id"] = self.task_type_id.default_stage_id.id
         task = self.env["project.task"].create(task_vals)
