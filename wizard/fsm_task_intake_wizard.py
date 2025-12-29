@@ -210,7 +210,12 @@ class FsmTaskIntakeWizard(models.TransientModel):
         if self.team_id:
             teams = teams.filtered(lambda t: t.id == self.team_id.id)
         if not teams:
-            teams = self.env["fsm.team"].search([("capable_project_ids", "in", self.task_type_id.project_id.id), ("active","=",True)])
+            teams = self.env["fsm.team"].search([
+                ("capable_task_type_ids", "in", self.task_type_id.id),
+                ("active", "=", True),
+            ])
+        if not teams:
+            teams = self.env["fsm.team"].search([("active", "=", True)])
 
         if not teams:
             return []
