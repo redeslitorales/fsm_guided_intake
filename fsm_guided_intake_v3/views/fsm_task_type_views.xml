@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_fsm_task_type_tree" model="ir.ui.view">
+        <field name="name">fsm.task.type.tree</field>
+        <field name="model">fsm.task.type</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="project_id"/>
+                <field name="default_planned_hours"/>
+                <field name="requires_products"/>
+                <field name="requires_serials"/>
+                <field name="requires_signature"/>
+                <field name="requires_photos"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_fsm_task_type_form" model="ir.ui.view">
+        <field name="name">fsm.task.type.form</field>
+        <field name="model">fsm.task.type</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="active"/>
+                        <field name="project_id"/>
+                        <field name="default_stage_id"/>
+                        <field name="default_planned_hours"/>
+                    </group>
+                    <group string="Buffers">
+                        <field name="buffer_before_mins"/>
+                        <field name="buffer_after_mins"/>
+                    </group>
+                    <group string="Requirements">
+                        <field name="requires_products"/>
+                        <field name="requires_serials"/>
+                        <field name="requires_signature"/>
+                        <field name="requires_photos"/>
+                    </group>
+                    <group string="Defaults">
+                        <field name="tag_ids" widget="many2many_tags"/>
+                    </group>
+                    <group string="Capabilities">
+                        <field name="capable_team_ids" widget="many2many_tags"/>
+                    </group>
+                    <group string="Checklist">
+                        <field name="checklist_subtask_names" placeholder="One checklist item per line"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_fsm_task_type" model="ir.actions.act_window">
+        <field name="name">Task Types</field>
+        <field name="res_model">fsm.task.type</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_fsm_intake_root" name="FSM Intake" sequence="10" groups="fsm_guided_intake.group_fsm_intake_user"/>
+    <menuitem id="menu_fsm_task_type" name="Task Types" parent="menu_fsm_intake_root" action="action_fsm_task_type" sequence="20"/>
+</odoo>
