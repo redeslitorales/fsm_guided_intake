@@ -60,6 +60,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
     # Step 2
     partner_id = fields.Many2one("res.partner", string="Customer")
     partner_phone = fields.Char(related="partner_id.phone", readonly=True)
+    show_service_address = fields.Boolean(compute="_compute_service_address_visibility")
     service_address_id = fields.Many2one(
         "res.partner",
         string="Service Address",
@@ -119,15 +120,25 @@ class FsmTaskIntakeWizard(models.TransientModel):
     def _onchange_partner(self):
         if self.partner_id and not self.service_address_id:
             # best effort: if only one child address, pick it
-            addrs = self.partner_id.child_ids.filtered(lambda p: p.type in ("delivery", "other", "contact"))
+            addrs = self._get_service_addresses(self.partner_id)
             if len(addrs) == 1:
                 self.service_address_id = addrs.id
+
+    def _get_service_addresses(self, partner):
+        return partner.child_ids.filtered(lambda p: p.type in ("delivery", "other", "contact"))
+
+    @api.depends("partner_id")
+    def _compute_service_address_visibility(self):
+        for wiz in self:
+            addrs = self._get_service_addresses(wiz.partner_id) if wiz.partner_id else self.env["res.partner"]
+            wiz.show_service_address = len(addrs) > 1
 
     @api.depends("partner_id", "service_address_id", "line_ids", "planned_hours", "task_type_id")
     def _compute_warnings(self):
         for wiz in self:
+            addrs = self._get_service_addresses(wiz.partner_id) if wiz.partner_id else self.env["res.partner"]
             wiz.warning_customer_phone_missing = bool(wiz.partner_id) and not bool(wiz.partner_id.phone or wiz.partner_id.mobile)
-            wiz.warning_no_service_address = bool(wiz.partner_id) and not bool(wiz.service_address_id)
+            wiz.warning_no_service_address = bool(wiz.partner_id) and len(addrs) > 1 and not bool(wiz.service_address_id)
             wiz.warning_planned_hours_zero = (wiz.planned_hours or 0.0) <= 0.0
             wiz.warning_task_type_mapping = bool(wiz.task_type_id) and not bool(wiz.task_type_id.project_id)
 
