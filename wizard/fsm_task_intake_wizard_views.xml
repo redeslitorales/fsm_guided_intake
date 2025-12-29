@@ -4,7 +4,7 @@
         <field name="name">fsm.task.intake.wizard.form</field>
         <field name="model">fsm.task.intake.wizard</field>
         <field name="arch" type="xml">
-            <form string="Create Field Service Task" create="false" edit="false">
+            <form string="Create Field Service Task" create="false">
                 <sheet>
                     <group>
                         <field name="state" invisible="1"/>
