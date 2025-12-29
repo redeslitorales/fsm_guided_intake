@@ -20,8 +20,8 @@ class FsmTeam(models.Model):
     capable_task_type_ids = fields.Many2many(
         "fsm.task.type",
         "fsm_task_type_fsm_team_rel",
-        "team_id",
-        "task_type_id",
+        "fsm_team_id",
+        "fsm_task_type_id",
         string="Capable Task Types",
     )
     shift_ids = fields.One2many("fsm.team.shift", "team_id", string="Shifts")

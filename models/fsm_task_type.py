@@ -34,8 +34,8 @@ class FsmTaskType(models.Model):
     capable_team_ids = fields.Many2many(
         "fsm.team",
         "fsm_task_type_fsm_team_rel",
-        "task_type_id",
-        "team_id",
+        "fsm_task_type_id",
+        "fsm_team_id",
         string="Capable Teams",
     )
 
