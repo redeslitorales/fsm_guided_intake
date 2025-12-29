@@ -58,7 +58,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
     task_type_id = fields.Many2one("fsm.task.type", string="What are we doing?", required=True)
 
     # Step 2
-    partner_id = fields.Many2one("res.partner", string="Customer", required=True)
+    partner_id = fields.Many2one("res.partner", string="Customer")
     partner_phone = fields.Char(related="partner_id.phone", readonly=True)
     service_address_id = fields.Many2one(
         "res.partner",
@@ -368,6 +368,8 @@ class FsmTaskIntakeWizard(models.TransientModel):
         idx = order.index(self.state)
         if self.state == "confirm":
             return {"type": "ir.actions.act_window_close"}
+        if self.state == "customer" and not self.partner_id:
+            raise UserError(_("Please select a customer before continuing."))
         self.state = order[min(idx+1, len(order)-1)]
         return {
             "type": "ir.actions.act_window",
