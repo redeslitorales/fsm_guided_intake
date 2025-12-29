@@ -35,11 +35,11 @@
                         </div>
                     </group>
 
-                    <group invisible='state != "products"' col="2">
+                    <group invisible='state != "products"' col="1">
                         <div class="alert alert-info" invisible="not require_products">
                             This task type requires at least one product/service line.
                         </div>
-                        <field name="line_ids" colspan="2">
+                        <field name="line_ids" nolabel="1">
                             <tree editable="bottom">
                                 <field name="product_id"/>
                                 <field name="quantity"/>
