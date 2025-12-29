@@ -17,6 +17,13 @@ class FsmTeam(models.Model):
     warehouse_id = fields.Many2one("stock.warehouse", string="Warehouse")
 
     capable_project_ids = fields.Many2many("project.project", string="Capable Projects")
+    capable_task_type_ids = fields.Many2many(
+        "fsm.task.type",
+        "fsm_task_type_fsm_team_rel",
+        "fsm_team_id",
+        "fsm_task_type_id",
+        string="Capable Task Types",
+    )
     shift_ids = fields.One2many("fsm.team.shift", "team_id", string="Shifts")
 
     def get_default_picking_type_out(self):
