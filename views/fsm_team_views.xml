@@ -32,7 +32,7 @@
                             <field name="vehicle_ids"/>
                         </page>
                         <page string="Capabilities">
-                            <field name="capable_project_ids" widget="many2many_tags"/>
+                            <field name="capable_task_type_ids" widget="many2many_tags"/>
                         </page>
                         <page string="Shifts">
                             <field name="shift_ids">

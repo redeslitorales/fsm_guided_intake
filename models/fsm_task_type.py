@@ -31,7 +31,13 @@ class FsmTaskType(models.Model):
         help="When a task is created from this type, these will be created as subtasks."
     )
 
-    capable_team_ids = fields.Many2many("fsm.team", string="Capable Teams")
+    capable_team_ids = fields.Many2many(
+        "fsm.team",
+        "fsm_task_type_fsm_team_rel",
+        "task_type_id",
+        "team_id",
+        string="Capable Teams",
+    )
 
     @api.constrains("default_planned_hours")
     def _check_hours(self):

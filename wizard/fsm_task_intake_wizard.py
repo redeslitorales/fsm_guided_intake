@@ -191,7 +191,6 @@ class FsmTaskIntakeWizard(models.TransientModel):
         if hasattr(partner, "service_zone_id") and partner.service_zone_id:
             return f"ZONE:{partner.service_zone_id.id}"
         return (partner.zip or "")[:3] or (partner.city or "").lower() or (partner.state_id.name or "").lower()
-        return (partner.zip or "")[:3] or (partner.city or "").lower() or (partner.state_id.name or "").lower()
 
     def _find_top_slots(self, start_dt, limit=3):
         """Return list of dicts: {team, start, end, score} sorted best-first.
@@ -211,7 +210,12 @@ class FsmTaskIntakeWizard(models.TransientModel):
         if self.team_id:
             teams = teams.filtered(lambda t: t.id == self.team_id.id)
         if not teams:
-            teams = self.env["fsm.team"].search([("capable_project_ids", "in", self.task_type_id.project_id.id), ("active","=",True)])
+            teams = self.env["fsm.team"].search([
+                ("capable_task_type_ids", "in", self.task_type_id.id),
+                ("active", "=", True),
+            ])
+        if not teams:
+            teams = self.env["fsm.team"].search([("active", "=", True)])
 
         if not teams:
             return []
@@ -263,6 +267,8 @@ class FsmTaskIntakeWizard(models.TransientModel):
                 for shift in shifts:
                     sh_start = datetime.combine(day, time.min) + timedelta(hours=shift.start_time)
                     sh_end = datetime.combine(day, time.min) + timedelta(hours=shift.end_time)
+                    shift_hours = (sh_end - sh_start).total_seconds() / 3600.0
+                    capacity_hours = shift.capacity_hours if shift.capacity_hours > 0 else shift_hours
 
                     # Build occupied intervals within this shift for confirmed bookings
                     intervals = []
@@ -287,12 +293,14 @@ class FsmTaskIntakeWizard(models.TransientModel):
 
                     # Quick capacity check (hours)
                     booked = sum((b - a).total_seconds() / 3600.0 for a, b in merged)
-                    avail = max(0.0, shift.capacity_hours - booked)
+                    avail = max(0.0, capacity_hours - booked)
                     if avail + 1e-6 < total_hours:
                         continue
 
                     # Find earliest gap that fits total_hours (packing within shift)
                     candidate_start = sh_start
+                    if day == start.date():
+                        candidate_start = max(candidate_start, start)
                     found = False
                     for a, b in merged:
                         if a > candidate_start:
@@ -317,7 +325,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
                     score = (day_offset * 1000) + (avg_km * 0.1) - (same_zone_count * 10)
                     results.append({
                         "team": team,
-                        "start": sh_start,
+                        "start": candidate_start,
                         "end": end_dt,
                         "score": score,
                         "same_zone_count": same_zone_count,
