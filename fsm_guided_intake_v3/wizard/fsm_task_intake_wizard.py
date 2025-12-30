@@ -441,6 +441,7 @@ def _haversine_km(self, lat1, lon1, lat2, lon2):
         if self.task_type_id.default_stage_id:
             task_vals["stage_id"] = self.task_type_id.default_stage_id.id
         task = self.env["project.task"].create(task_vals)
+        task.flush()
 
         # Materials
         for l in self.line_ids:
@@ -477,6 +478,7 @@ def _haversine_km(self, lat1, lon1, lat2, lon2):
 
         # Create delivery + reserve (as requested)
         booking.action_create_or_update_delivery()
+        booking.flush()
 
         # Open created task
         return {
