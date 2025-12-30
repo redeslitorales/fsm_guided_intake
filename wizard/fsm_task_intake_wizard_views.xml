@@ -204,4 +204,8 @@
         <field name="target">new</field>
         <field name="binding_model_id" ref="model_project_task"/>
     </record>
+
+    <menuitem id="menu_fsm_task_intake_wizard" name="New Task"
+              parent="menu_fsm_intake_root" action="action_fsm_task_intake_wizard" sequence="15"/>
+
 </odoo>
