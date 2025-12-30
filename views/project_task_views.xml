@@ -1,5 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="view_project_task_tree_fsm_guided_inherit" model="ir.ui.view">
+        <field name="name">project.task.tree.fsm.guided.inherit</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_tree2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree" position="attributes">
+                <attribute name="create">false</attribute>
+            </xpath>
+            <xpath expr="//tree" position="inside">
+                <header>
+                    <button name="%(fsm_guided_intake.action_fsm_task_intake_wizard)d" type="action"
+                            string="New" class="btn-primary"/>
+                </header>
+            </xpath>
+        </field>
+    </record>
+
     <record id="view_project_task_form_fsm_guided_inherit" model="ir.ui.view">
         <field name="name">project.task.form.fsm.guided.inherit</field>
         <field name="model">project.task</field>
