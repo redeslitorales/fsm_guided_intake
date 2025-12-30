@@ -1,98 +1,187 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="view_fsm_task_intake_wizard_form" model="ir.ui.view">
+    <record id="fsm_task_intake_wizard_form" model="ir.ui.view">
         <field name="name">fsm.task.intake.wizard.form</field>
         <field name="model">fsm.task.intake.wizard</field>
         <field name="arch" type="xml">
-            <form string="Create Field Service Task - Select Activity" create="false">
+            <form string="Create Field Service Task">
+                <header>
+                    <button name="action_back" string="Back" type="object" class="btn-secondary" 
+                            attrs="{'invisible': [('state', '=', 'type')]}"/>
+                    <button name="action_next" string="Next" type="object" class="btn-primary" 
+                            attrs="{'invisible': [('state', '=', 'confirm')]}"/>
+                    <button name="action_create_task" string="Create Task" type="object" class="btn-primary" 
+                            attrs="{'invisible': [('state', '!=', 'confirm')]}"/>
+                    <field name="state" widget="statusbar" statusbar_visible="type,customer,products,schedule,notes,confirm"/>
+                </header>
                 <sheet>
                     <group>
-                        <field name="state" invisible="1"/>
-                        <field name="require_products" invisible="1"/>
-                        <field name="warning_customer_phone_missing" invisible="1"/>
-                        <field name="warning_no_service_address" invisible="1"/>
-                        <field name="warning_missing_serials" invisible="1"/>
-                        <field name="warning_task_type_mapping" invisible="1"/>
-                        <field name="warning_planned_hours_zero" invisible="1"/>
-                        <field name="warning_no_products_or_so" invisible="1"/>
-                    </group>
-
-                    <!-- SCREEN 1: Task Type (Planned Hours field REMOVED) -->
-                    <group invisible='state != "type"'>
-                        <field name="task_type_id" options="{'no_create': False}"/>
-                        <!-- Planned hours field removed - now taken from task type -->
+                        <field name="task_type_id" invisible="1"/>
+                        <field name="partner_id" invisible="1"/>
                         <field name="planned_hours" invisible="1"/>
+                        <field name="require_products" invisible="1"/>
+                        <field name="require_serials" invisible="1"/>
+                        <field name="has_existing_sales_orders" invisible="1"/>
                     </group>
 
-                    <!-- SCREEN 2: Customer (Warnings title REMOVED) -->
-                    <group invisible='state != "customer"'>
-                        <field name="partner_id" options="{'no_create': False}"/>
-                        <field name="show_service_address" invisible="1"/>
-                        <field name="service_address_id" options="{'no_create': False}"
-                               invisible="not show_service_address"/>
-                        <!-- "Warnings" label removed -->
-                        <div class="alert alert-warning" invisible="not warning_customer_phone_missing">
-                            Customer is missing a phone number.
-                        </div>
-                        <div class="alert alert-warning" invisible="not warning_no_service_address">
-                            No service address selected.
-                        </div>
-                    </group>
-
-                    <!-- SCREEN 3: Products (Updated banner message and removed message box) -->
-                    <group invisible='state != "products"' col="1">
-                        <!-- Updated banner message -->
-                        <div class="alert alert-info">
-                            Select an Existing Sales Order or Add Products to the Task
-                        </div>
-                        <field name="sale_order_id" options="{'no_create': False}"/>
-                        <!-- Message box to the left of product table removed -->
-                        <field name="line_ids" nolabel="1">
-                            <tree editable="bottom">
-                                <field name="product_id"/>
-                                <field name="quantity"/>
-                                <field name="lot_id"/>
-                                <field name="lot_ids" widget="many2many_tags"/>
-                            </tree>
-                        </field>
-                        <!-- Warning if products required but neither SO nor products provided -->
-                        <div class="alert alert-warning" invisible="not warning_no_products_or_so">
-                            This task type requires products. Please select a Sales Order or add products above.
-                        </div>
-                        <div class="alert alert-warning" invisible="not warning_missing_serials">
-                            One or more tracked products are missing a serial/lot number.
-                        </div>
-                    </group>
-
-                    <!-- SCREEN 4: Schedule (Fixed team display and time slot formatting) -->
-                    <group invisible='state != "schedule"'>
-                        <!-- Qualified Teams title and field -->
-                        <group string="Qualified Teams">
-                            <field name="qualified_team_ids" widget="many2many_tags" readonly="1" nolabel="1"/>
-                        </group>
-                        <!-- Available time slots with proper datetime formatting -->
-                        <group string="Available Appointments">
-                            <field name="selected_slot" widget="radio" nolabel="1"/>
-                            <button name="action_more_options" type="object" string="More options" class="btn-secondary"/>
+                    <!-- Step 1: Type -->
+                    <group attrs="{'invisible': [('state', '!=', 'type')]}">
+                        <group>
+                            <field name="task_type_id" required="1" 
+                                   options="{'no_create': True, 'no_open': True}"/>
                         </group>
                     </group>
 
-                    <group invisible='state != "notes"'>
-                        <field name="notes" placeholder="Internal notes for technicians..."/>
+                    <!-- Step 2: Customer -->
+                    <group attrs="{'invisible': [('state', '!=', 'customer')]}">
+                        <group>
+                            <field name="partner_id" required="1" 
+                                   options="{'no_create_edit': True}"/>
+                            <field name="partner_phone" readonly="1"/>
+                            <field name="show_service_address" invisible="1"/>
+                            <field name="service_address_id" 
+                                   attrs="{'invisible': [('show_service_address', '=', False)]}"
+                                   options="{'no_create_edit': True}"/>
+                        </group>
                     </group>
 
-                    <group invisible='state != "confirm"'>
-                        <group string="Task Details" col="2">
+                    <!-- Step 3: Products -->
+                    <group attrs="{'invisible': [('state', '!=', 'products')]}">
+                        <group>
+                            <!-- Only show sales order field if customer has existing orders -->
+                            <div attrs="{'invisible': [('has_existing_sales_orders', '=', True)]}">
+                                <div class="alert alert-info" role="alert">
+                                    <p><strong>No existing sales orders found</strong></p>
+                                    <p>This customer does not have any sales orders. You can add products manually below.</p>
+                                </div>
+                            </div>
+                            <field name="sale_order_id" 
+                                   attrs="{'invisible': [('has_existing_sales_orders', '=', False)]}"
+                                   options="{'no_create': True, 'no_open': True}"/>
+                        </group>
+                        <group>
+                            <field name="line_ids" nolabel="1" colspan="2">
+                                <tree editable="bottom">
+                                    <field name="product_id" required="1"/>
+                                    <field name="quantity"/>
+                                    <field name="tracking" invisible="1"/>
+                                    <field name="is_service" invisible="1"/>
+                                    <field name="lot_id" 
+                                           attrs="{'invisible': ['|', ('tracking', '!=', 'lot'), ('is_service', '=', True)],
+                                                   'required': [('tracking', '=', 'lot')]}"/>
+                                    <field name="lot_ids" widget="many2many_tags" 
+                                           attrs="{'invisible': ['|', ('tracking', '!=', 'serial'), ('is_service', '=', True)],
+                                                   'required': [('tracking', '=', 'serial')]}"/>
+                                </tree>
+                            </field>
+                        </group>
+                    </group>
+
+                    <!-- Step 4: Schedule -->
+                    <group attrs="{'invisible': [('state', '!=', 'schedule')]}">
+                        <group string="Filter by Team (Optional)">
+                            <field name="team_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="qualified_team_ids" invisible="1"/>
+                            <div class="o_row" attrs="{'invisible': [('qualified_team_ids', '=', [])]}">
+                                <div class="o_form_label">Quick Select Team:</div>
+                                <div class="o_field_widget">
+                                    <field name="qualified_team_ids" widget="many2many_tags" 
+                                           readonly="1"
+                                           options="{'color_field': 'color', 'no_create': True}"/>
+                                </div>
+                            </div>
+                        </group>
+                        
+                        <group string="Available Time Slots">
+                            <field name="slot_index" invisible="1"/>
+                            <field name="slot1_label" invisible="1"/>
+                            <field name="slot2_label" invisible="1"/>
+                            <field name="slot3_label" invisible="1"/>
+                            <field name="slot1_start" invisible="1"/>
+                            <field name="slot2_start" invisible="1"/>
+                            <field name="slot3_start" invisible="1"/>
+                            <field name="slot1_end" invisible="1"/>
+                            <field name="slot2_end" invisible="1"/>
+                            <field name="slot3_end" invisible="1"/>
+                            
+                            <field name="selected_slot" widget="radio" 
+                                   options="{'horizontal': false}"/>
+                            
+                            <!-- Display the actual datetime labels below each radio option -->
+                            <div class="o_row">
+                                <div class="col-12">
+                                    <div class="alert alert-info" attrs="{'invisible': [('slot1_label', '=', False)]}">
+                                        <strong>Slot 1:</strong> <field name="slot1_label" readonly="1" nolabel="1"/>
+                                    </div>
+                                    <div class="alert alert-info" attrs="{'invisible': [('slot2_label', '=', False)]}">
+                                        <strong>Slot 2:</strong> <field name="slot2_label" readonly="1" nolabel="1"/>
+                                    </div>
+                                    <div class="alert alert-info" attrs="{'invisible': [('slot3_label', '=', False)]}">
+                                        <strong>Slot 3:</strong> <field name="slot3_label" readonly="1" nolabel="1"/>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button name="action_more_options" string="Show More Times" 
+                                    type="object" class="btn-link"/>
+                        </group>
+                    </group>
+
+                    <!-- Step 5: Notes -->
+                    <group attrs="{'invisible': [('state', '!=', 'notes')]}">
+                        <group>
+                            <field name="notes" nolabel="1" placeholder="Enter any internal notes or special instructions..."/>
+                        </group>
+                    </group>
+
+                    <!-- Step 6: Confirm -->
+                    <group attrs="{'invisible': [('state', '!=', 'confirm')]}">
+                        <group string="Summary">
                             <field name="task_type_id" readonly="1"/>
                             <field name="partner_id" readonly="1"/>
-                            <field name="service_address_id" readonly="1" invisible="not service_address_id"/>
-                            <field name="sale_order_id" readonly="1" invisible="not sale_order_id"/>
-                            <field name="planned_hours" readonly="1"/>
-                            <field name="selected_slot_label" readonly="1"/>
-                            <field name="qualified_team_ids" widget="many2many_tags" readonly="1"/>
-                            <field name="notes" readonly="1"/>
+                            <field name="service_address_id" readonly="1" 
+                                   attrs="{'invisible': [('service_address_id', '=', False)]}"/>
+                            <field name="selected_slot_label" readonly="1" string="Scheduled Time"/>
+                            <field name="team_id" readonly="1" 
+                                   attrs="{'invisible': [('team_id', '=', False)]}"/>
                         </group>
-                        <group string="Products/Services">
+                        
+                        <!-- Warnings -->
+                        <group>
+                            <field name="warning_customer_phone_missing" invisible="1"/>
+                            <field name="warning_no_service_address" invisible="1"/>
+                            <field name="warning_missing_serials" invisible="1"/>
+                            <field name="warning_planned_hours_zero" invisible="1"/>
+                            <field name="warning_task_type_mapping" invisible="1"/>
+                            <field name="warning_no_products_or_so" invisible="1"/>
+                            
+                            <div class="alert alert-warning" role="alert" 
+                                 attrs="{'invisible': [('warning_customer_phone_missing', '=', False)]}">
+                                <i class="fa fa-warning"/> Customer phone number is missing.
+                            </div>
+                            <div class="alert alert-warning" role="alert" 
+                                 attrs="{'invisible': [('warning_no_service_address', '=', False)]}">
+                                <i class="fa fa-warning"/> Service address is not specified.
+                            </div>
+                            <div class="alert alert-danger" role="alert" 
+                                 attrs="{'invisible': [('warning_missing_serials', '=', False)]}">
+                                <i class="fa fa-exclamation-circle"/> Some products require serial/lot numbers.
+                            </div>
+                            <div class="alert alert-danger" role="alert" 
+                                 attrs="{'invisible': [('warning_planned_hours_zero', '=', False)]}">
+                                <i class="fa fa-exclamation-circle"/> Planned hours cannot be zero.
+                            </div>
+                            <div class="alert alert-danger" role="alert" 
+                                 attrs="{'invisible': [('warning_task_type_mapping', '=', False)]}">
+                                <i class="fa fa-exclamation-circle"/> Task type must have a project assigned.
+                            </div>
+                            <div class="alert alert-danger" role="alert" 
+                                 attrs="{'invisible': [('warning_no_products_or_so', '=', False)]}">
+                                <i class="fa fa-exclamation-circle"/> This task type requires products or a sales order.
+                            </div>
+                        </group>
+                        
+                        <group string="Products/Services" attrs="{'invisible': [('line_ids', '=', [])]}">
                             <field name="line_ids" nolabel="1" readonly="1">
                                 <tree>
                                     <field name="product_id"/>
@@ -102,52 +191,17 @@
                                 </tree>
                             </field>
                         </group>
-                        <div class="alert alert-warning" invisible="not warning_task_type_mapping">
-                            Task type is missing a project mapping.
-                        </div>
-                        <div class="alert alert-warning" invisible="not warning_planned_hours_zero">
-                            Planned hours is 0.
-                        </div>
-                        <div class="alert alert-warning" invisible="not warning_customer_phone_missing">
-                            Customer is missing a phone number.
-                        </div>
-                        <div class="alert alert-warning" invisible="not warning_no_service_address">
-                            No service address selected.
-                        </div>
-                        <div class="alert alert-warning" invisible="not warning_missing_serials">
-                            Serial-tracked product(s) are missing serial/lot numbers.
-                        </div>
-                        <div class="alert alert-warning" invisible="not warning_no_products_or_so">
-                            This task type requires products. Please go back and select a Sales Order or add products.
-                        </div>
-                        <p>
-                            When you click <b>Create Task</b>, the task will be created, booked on the selected slot,
-                            and an outgoing delivery order will be created and stock reserved.
-                        </p>
                     </group>
-
                 </sheet>
-                <footer>
-                    <button name="action_back" type="object" string="Back" class="btn-secondary"
-                            invisible="state == 'type'"/>
-                    <button name="action_next" type="object" string="Next" class="btn-primary"
-                            invisible="state == 'confirm'"/>
-                    <button name="action_create_task" type="object" string="Create Task" class="btn-primary"
-                            invisible="state != 'confirm'"/>
-                    <button string="Cancel" special="cancel" class="btn-secondary"/>
-                </footer>
             </form>
         </field>
     </record>
 
     <record id="action_fsm_task_intake_wizard" model="ir.actions.act_window">
-        <field name="name">Create Field Service Task - Select Activity</field>
+        <field name="name">Create Field Service Task</field>
         <field name="res_model">fsm.task.intake.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
-        <field name="context">{}</field>
+        <field name="binding_model_id" ref="model_project_task"/>
     </record>
-
-    <menuitem id="menu_fsm_task_intake" name="Create Task (Wizard)" parent="menu_fsm_intake_root"
-              action="action_fsm_task_intake_wizard" sequence="10"/>
 </odoo>

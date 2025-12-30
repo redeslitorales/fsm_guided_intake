@@ -75,6 +75,10 @@ class FsmTaskIntakeWizard(models.TransientModel):
         domain="[('partner_id', '=', partner_id)]",
         help="Select an existing sales order to reuse for this task."
     )
+    has_existing_sales_orders = fields.Boolean(
+        compute="_compute_has_existing_sales_orders",
+        string="Has Existing Sales Orders"
+    )
     line_ids = fields.One2many("fsm.task.intake.wizard.line", "wizard_id", string="Products/Services")
     require_products = fields.Boolean(related="task_type_id.requires_products", readonly=True)
     require_serials = fields.Boolean(related="task_type_id.requires_serials", readonly=True)
@@ -105,7 +109,11 @@ class FsmTaskIntakeWizard(models.TransientModel):
     slot2_end = fields.Datetime(compute="_compute_slots")
     slot3_end = fields.Datetime(compute="_compute_slots")
 
-    selected_slot = fields.Selection(selection="_get_slot_selection", default="1")
+    selected_slot = fields.Selection([
+        ("1", "Slot 1"),
+        ("2", "Slot 2"),
+        ("3", "Slot 3"),
+    ], default="1", string="Choose Appointment")
     selected_slot_label = fields.Char(
         compute="_compute_selected_slot_label",
         readonly=True,
@@ -145,28 +153,6 @@ class FsmTaskIntakeWizard(models.TransientModel):
         self.ensure_one()
         return _("Create Field Service Task - %s") % (self._get_state_title() or "")
 
-    def _get_slot_selection(self):
-        """Generate selection options with formatted datetime labels"""
-        self.ensure_one()
-        
-        options = []
-        if self.slot1_label:
-            options.append(("1", self.slot1_label))
-        else:
-            options.append(("1", _("No available slot")))
-            
-        if self.slot2_label:
-            options.append(("2", self.slot2_label))
-        else:
-            options.append(("2", _("No available slot")))
-            
-        if self.slot3_label:
-            options.append(("3", self.slot3_label))
-        else:
-            options.append(("3", _("No available slot")))
-            
-        return options
-
     def _get_slot_label_map(self):
         self.ensure_one()
         return {
@@ -191,6 +177,18 @@ class FsmTaskIntakeWizard(models.TransientModel):
         for wiz in self:
             addrs = self._get_service_addresses(wiz.partner_id) if wiz.partner_id else self.env["res.partner"]
             wiz.show_service_address = len(addrs) > 1
+
+    @api.depends("partner_id")
+    def _compute_has_existing_sales_orders(self):
+        """Check if the customer has any existing sales orders"""
+        for wiz in self:
+            if wiz.partner_id:
+                count = self.env["sale.order"].search_count([
+                    ("partner_id", "=", wiz.partner_id.id)
+                ])
+                wiz.has_existing_sales_orders = count > 0
+            else:
+                wiz.has_existing_sales_orders = False
 
     @api.depends("partner_id", "service_address_id", "line_ids", "planned_hours", "task_type_id", "sale_order_id")
     def _compute_warnings(self):
