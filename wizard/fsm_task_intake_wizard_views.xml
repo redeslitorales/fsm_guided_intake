@@ -14,19 +14,23 @@
                         <field name="warning_missing_serials" invisible="1"/>
                         <field name="warning_task_type_mapping" invisible="1"/>
                         <field name="warning_planned_hours_zero" invisible="1"/>
+                        <field name="warning_no_products_or_so" invisible="1"/>
                     </group>
 
+                    <!-- SCREEN 1: Task Type (Planned Hours field REMOVED) -->
                     <group invisible='state != "type"'>
                         <field name="task_type_id" options="{'no_create': False}"/>
-                        <field name="planned_hours"/>
+                        <!-- Planned hours field removed - now taken from task type -->
+                        <field name="planned_hours" invisible="1"/>
                     </group>
 
+                    <!-- SCREEN 2: Customer (Warnings title REMOVED) -->
                     <group invisible='state != "customer"'>
                         <field name="partner_id" options="{'no_create': False}"/>
                         <field name="show_service_address" invisible="1"/>
                         <field name="service_address_id" options="{'no_create': False}"
                                invisible="not show_service_address"/>
-                        <label for="service_address_id" string="Warnings" colspan="2"/>
+                        <!-- "Warnings" label removed -->
                         <div class="alert alert-warning" invisible="not warning_customer_phone_missing">
                             Customer is missing a phone number.
                         </div>
@@ -35,11 +39,14 @@
                         </div>
                     </group>
 
+                    <!-- SCREEN 3: Products (Updated banner message and removed message box) -->
                     <group invisible='state != "products"' col="1">
-                        <field name="sale_order_id" options="{'no_create': False}"/>
-                        <div class="alert alert-info" invisible="not require_products">
-                            This task type requires at least one product/service line.
+                        <!-- Updated banner message -->
+                        <div class="alert alert-info">
+                            Select an Existing Sales Order or Add Products to the Task
                         </div>
+                        <field name="sale_order_id" options="{'no_create': False}"/>
+                        <!-- Message box to the left of product table removed -->
                         <field name="line_ids" nolabel="1">
                             <tree editable="bottom">
                                 <field name="product_id"/>
@@ -48,13 +55,22 @@
                                 <field name="lot_ids" widget="many2many_tags"/>
                             </tree>
                         </field>
+                        <!-- Warning if products required but neither SO nor products provided -->
+                        <div class="alert alert-warning" invisible="not warning_no_products_or_so">
+                            This task type requires products. Please select a Sales Order or add products above.
+                        </div>
                         <div class="alert alert-warning" invisible="not warning_missing_serials">
                             One or more tracked products are missing a serial/lot number.
                         </div>
                     </group>
 
+                    <!-- SCREEN 4: Schedule (Fixed team display and time slot formatting) -->
                     <group invisible='state != "schedule"'>
-                        <field name="qualified_team_ids" widget="many2many_tags" readonly="1"/>
+                        <!-- Qualified Teams title and field -->
+                        <group string="Qualified Teams">
+                            <field name="qualified_team_ids" widget="many2many_tags" readonly="1" nolabel="1"/>
+                        </group>
+                        <!-- Available time slots with proper datetime formatting -->
                         <group string="Available Appointments">
                             <field name="selected_slot" widget="radio" nolabel="1"/>
                             <button name="action_more_options" type="object" string="More options" class="btn-secondary"/>
@@ -100,6 +116,9 @@
                         </div>
                         <div class="alert alert-warning" invisible="not warning_missing_serials">
                             Serial-tracked product(s) are missing serial/lot numbers.
+                        </div>
+                        <div class="alert alert-warning" invisible="not warning_no_products_or_so">
+                            This task type requires products. Please go back and select a Sales Order or add products.
                         </div>
                         <p>
                             When you click <b>Create Task</b>, the task will be created, booked on the selected slot,

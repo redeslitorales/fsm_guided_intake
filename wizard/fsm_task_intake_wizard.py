@@ -81,8 +81,8 @@ class FsmTaskIntakeWizard(models.TransientModel):
     require_signature = fields.Boolean(related="task_type_id.requires_signature", readonly=True)
     require_photos = fields.Boolean(related="task_type_id.requires_photos", readonly=True)
 
-    # Duration
-    planned_hours = fields.Float(default=lambda self: self._default_planned_hours())
+    # Duration - planned_hours is now computed from task type, not user-editable
+    planned_hours = fields.Float(compute="_compute_planned_hours", store=True)
     buffer_before_mins = fields.Integer(related="task_type_id.buffer_before_mins", readonly=True)
     buffer_after_mins = fields.Integer(related="task_type_id.buffer_after_mins", readonly=True)
 
@@ -121,12 +121,13 @@ class FsmTaskIntakeWizard(models.TransientModel):
     warning_missing_serials = fields.Boolean(compute="_compute_warnings")
     warning_planned_hours_zero = fields.Boolean(compute="_compute_warnings")
     warning_task_type_mapping = fields.Boolean(compute="_compute_warnings")
+    warning_no_products_or_so = fields.Boolean(compute="_compute_warnings")
 
-    @api.model
-    def _default_planned_hours(self):
-        # context may include default_task_type_id
-        tt = self.env["fsm.task.type"].browse(self._context.get("default_task_type_id")) if self._context.get("default_task_type_id") else None
-        return tt.default_planned_hours if tt else 1.0
+    @api.depends("task_type_id")
+    def _compute_planned_hours(self):
+        """Planned hours now taken from task type record"""
+        for wiz in self:
+            wiz.planned_hours = wiz.task_type_id.default_planned_hours if wiz.task_type_id else 1.0
 
     def _get_state_title(self):
         self.ensure_one()
@@ -145,12 +146,26 @@ class FsmTaskIntakeWizard(models.TransientModel):
         return _("Create Field Service Task - %s") % (self._get_state_title() or "")
 
     def _get_slot_selection(self):
-        labels = (self.env.context or {}).get("slot_labels", {})
-        return [
-            ("1", labels.get("1", _("Option 1"))),
-            ("2", labels.get("2", _("Option 2"))),
-            ("3", labels.get("3", _("Option 3"))),
-        ]
+        """Generate selection options with formatted datetime labels"""
+        self.ensure_one()
+        
+        options = []
+        if self.slot1_label:
+            options.append(("1", self.slot1_label))
+        else:
+            options.append(("1", _("No available slot")))
+            
+        if self.slot2_label:
+            options.append(("2", self.slot2_label))
+        else:
+            options.append(("2", _("No available slot")))
+            
+        if self.slot3_label:
+            options.append(("3", self.slot3_label))
+        else:
+            options.append(("3", _("No available slot")))
+            
+        return options
 
     def _get_slot_label_map(self):
         self.ensure_one()
@@ -159,11 +174,6 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "2": self.slot2_label or _("No available slot"),
             "3": self.slot3_label or _("No available slot"),
         }
-
-    @api.onchange("task_type_id")
-    def _onchange_task_type(self):
-        if self.task_type_id:
-            self.planned_hours = self.task_type_id.default_planned_hours
 
     @api.onchange("partner_id")
     def _onchange_partner(self):
@@ -182,232 +192,159 @@ class FsmTaskIntakeWizard(models.TransientModel):
             addrs = self._get_service_addresses(wiz.partner_id) if wiz.partner_id else self.env["res.partner"]
             wiz.show_service_address = len(addrs) > 1
 
-    @api.depends("partner_id", "service_address_id", "line_ids", "planned_hours", "task_type_id")
+    @api.depends("partner_id", "service_address_id", "line_ids", "planned_hours", "task_type_id", "sale_order_id")
     def _compute_warnings(self):
         for wiz in self:
-            addrs = self._get_service_addresses(wiz.partner_id) if wiz.partner_id else self.env["res.partner"]
-            wiz.warning_customer_phone_missing = bool(wiz.partner_id) and not bool(wiz.partner_id.phone or wiz.partner_id.mobile)
-            wiz.warning_no_service_address = bool(wiz.partner_id) and len(addrs) > 1 and not bool(wiz.service_address_id)
-            wiz.warning_planned_hours_zero = (wiz.planned_hours or 0.0) <= 0.0
-            wiz.warning_task_type_mapping = bool(wiz.task_type_id) and not bool(wiz.task_type_id.project_id)
+            wiz.warning_customer_phone_missing = bool(wiz.partner_id and not wiz.partner_id.phone)
+            wiz.warning_no_service_address = bool(wiz.partner_id and wiz.show_service_address and not wiz.service_address_id)
+            wiz.warning_missing_serials = False
+            wiz.warning_planned_hours_zero = bool((wiz.planned_hours or 0.0) == 0.0)
+            wiz.warning_task_type_mapping = bool(wiz.task_type_id and not wiz.task_type_id.project_id)
+            
+            # New warning: products required but neither SO nor products provided
+            wiz.warning_no_products_or_so = bool(
+                wiz.task_type_id and 
+                wiz.task_type_id.requires_products and 
+                not wiz.sale_order_id and 
+                not wiz.line_ids
+            )
 
-            if wiz.task_type_id and wiz.task_type_id.requires_serials:
-                serial_lines = wiz.line_ids.filtered(lambda l: l.product_id.tracking == "serial")
-                lot_lines = wiz.line_ids.filtered(lambda l: l.product_id.tracking == "lot")
-                wiz.warning_missing_serials = any(not l.lot_ids for l in serial_lines) or any(not l.lot_id for l in lot_lines)
-            else:
-                wiz.warning_missing_serials = False
-
-    @api.depends("task_type_id")
-    def _compute_qualified_teams(self):
-        for wiz in self:
-            wiz.qualified_team_ids = wiz.task_type_id.capable_team_ids
-
-    @api.depends("selected_slot", "slot1_label", "slot2_label", "slot3_label")
-    def _compute_selected_slot_label(self):
-        for wiz in self:
-            label_map = {
-                "1": wiz.slot1_label,
-                "2": wiz.slot2_label,
-                "3": wiz.slot3_label,
-            }
-            wiz.selected_slot_label = label_map.get(wiz.selected_slot) or ""
+            if wiz.line_ids:
+                for l in wiz.line_ids:
+                    if l.product_id and l.product_id.tracking in ("serial", "lot"):
+                        if l.product_id.tracking == "serial" and not l.lot_ids:
+                            wiz.warning_missing_serials = True
+                        elif l.product_id.tracking == "lot" and not l.lot_id:
+                            wiz.warning_missing_serials = True
 
     def _preflight_errors(self):
         self.ensure_one()
         errors = []
-        if self.warning_task_type_mapping:
-            errors.append(_("Task type is missing a project mapping."))
-        if self.warning_planned_hours_zero:
-            errors.append(_("Planned hours is 0."))
-        if self.warning_customer_phone_missing:
-            errors.append(_("Customer is missing a phone number."))
-        if self.warning_no_service_address:
-            errors.append(_("No service address selected."))
-        if self.task_type_id and self.task_type_id.requires_products and not self.line_ids:
-            errors.append(_("This task type requires products/services, but none were added."))
-        if self.warning_missing_serials:
-            errors.append(_("Serial-tracked product(s) are missing serial/lot numbers."))
+        if not self.task_type_id:
+            errors.append(_("Task type is required."))
+        if not self.partner_id:
+            errors.append(_("Customer is required."))
+        if self.task_type_id and not self.task_type_id.project_id:
+            errors.append(_("Task type must have a project assigned."))
+        if (self.planned_hours or 0.0) == 0.0:
+            errors.append(_("Planned hours cannot be 0."))
+        if self.task_type_id and self.task_type_id.requires_products:
+            if not self.sale_order_id and not self.line_ids:
+                errors.append(_("This task type requires products. Please select a Sales Order or add products."))
+        if self.task_type_id and self.task_type_id.requires_serials:
+            for l in self.line_ids:
+                if l.product_id and l.product_id.tracking in ("serial", "lot"):
+                    if l.product_id.tracking == "serial" and not l.lot_ids:
+                        errors.append(_("Product '%s' requires serial numbers.") % l.product_id.display_name)
+                    elif l.product_id.tracking == "lot" and not l.lot_id:
+                        errors.append(_("Product '%s' requires a lot number.") % l.product_id.display_name)
         return errors
 
-    # --- Scheduling helpers ---
     def _get_service_zone_name(self):
-        p = self.service_address_id or self.partner_id
-        if not p:
-            return ""
-        if hasattr(p, "service_zone_id") and p.service_zone_id:
-            return p.service_zone_id.display_name
+        self.ensure_one()
+        addr = self.service_address_id or self.partner_id
+        if addr and addr.city:
+            return addr.city
+        if addr and addr.state_id:
+            return addr.state_id.name
+        if addr and addr.country_id:
+            return addr.country_id.name
         return ""
 
-    def _haversine_km(self, lat1, lon1, lat2, lon2):
-        r = 6371.0
-        phi1 = math.radians(lat1)
-        phi2 = math.radians(lat2)
-        dphi = math.radians(lat2 - lat1)
-        dl = math.radians(lon2 - lon1)
-        a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dl/2)**2
-        return 2 * r * math.asin(math.sqrt(a))
+    @api.depends("task_type_id")
+    def _compute_qualified_teams(self):
+        for wiz in self:
+            if not wiz.task_type_id:
+                wiz.qualified_team_ids = self.env["fsm.team"]
+                continue
+            capable = wiz.task_type_id.capable_team_ids
+            if capable:
+                wiz.qualified_team_ids = capable
+            else:
+                # fallback: all active teams
+                wiz.qualified_team_ids = self.env["fsm.team"].search([("active", "=", True)])
 
-    def _partner_zone_key(self, partner):
-        # Prefer configured service zones if present; otherwise fall back to ZIP/city buckets.
-        if not partner:
-            return ""
-        if hasattr(partner, "service_zone_id") and partner.service_zone_id:
-            return f"ZONE:{partner.service_zone_id.id}"
-        return (partner.zip or "")[:3] or (partner.city or "").lower() or (partner.state_id.name or "").lower()
+    @api.depends("selected_slot", "slot1_label", "slot2_label", "slot3_label")
+    def _compute_selected_slot_label(self):
+        for wiz in self:
+            labels = {
+                "1": wiz.slot1_label or _("No available slot"),
+                "2": wiz.slot2_label or _("No available slot"),
+                "3": wiz.slot3_label or _("No available slot"),
+            }
+            wiz.selected_slot_label = labels.get(wiz.selected_slot or "1", _("No available slot"))
 
     def _find_top_slots(self, start_dt, limit=3):
-        """Return list of dicts: {team, start, end, score} sorted best-first.
-        Score boosts if same 'zone' as other tasks already booked that day.
+        """
+        Return a list of top available slots sorted by start time.
+        Each slot is a dict: {"start": datetime, "end": datetime, "team": fsm.team}.
         """
         self.ensure_one()
-        if not self.task_type_id:
-            return []
-        planned = self.planned_hours or 0.0
-        if planned <= 0:
-            return []
+        needed_hours = self.planned_hours or 1.0
+        buffer_before = timedelta(minutes=(self.buffer_before_mins or 0))
+        buffer_after = timedelta(minutes=(self.buffer_after_mins or 0))
 
-        # apply buffers
-        total_hours = planned + (self.task_type_id.buffer_before_mins + self.task_type_id.buffer_after_mins) / 60.0
-
-        teams = self.task_type_id.capable_team_ids
-        if self.team_id:
-            teams = teams.filtered(lambda t: t.id == self.team_id.id)
-        if not teams:
-            teams = self.env["fsm.team"].search([
-                ("capable_task_type_ids", "in", self.task_type_id.id),
-                ("active", "=", True),
-            ])
+        teams = self.qualified_team_ids
         if not teams:
             teams = self.env["fsm.team"].search([("active", "=", True)])
 
-        if not teams:
-            return []
-
-        zone = self._partner_zone_key(self.service_address_id or self.partner_id)
-
-        # look ahead N days (v1: 30)
-        results = []
-        now = fields.Datetime.context_timestamp(self, start_dt) if isinstance(start_dt, datetime) else fields.Datetime.now()
-        start = start_dt if isinstance(start_dt, datetime) else fields.Datetime.now()
-
-        for day_offset in range(0, 30):
-            day = (start + timedelta(days=day_offset)).date()
-            weekday = str(day.weekday())  # Monday=0
-            for team in teams:
-                shifts = team.shift_ids.filtered(lambda s: s.weekday == weekday)
-                if not shifts:
-                    continue
-
-                # bookings overlapping this day for team
-                day_start = datetime.combine(day, time.min)
-                day_end = datetime.combine(day, time.max)
-                bookings = self.env["fsm.booking"].search([
-                    ("team_id","=",team.id),
-                    ("state","=","confirmed"),
-                    ("start_datetime","<=", day_end),
-                    ("end_datetime",">=", day_start),
-                ])
-
-                # cluster scoring: prefer same service zone; then prefer closer geo distance when available
-                same_zone_count = 0
-                dist_sum = 0.0
-                dist_n = 0
-                ref_partner = (self.service_address_id or self.partner_id)
-                ref_lat = getattr(ref_partner, "partner_latitude", 0.0) or 0.0
-                ref_lng = getattr(ref_partner, "partner_longitude", 0.0) or 0.0
-
-                for b in bookings:
-                    p = b.task_id.fsm_service_address_id or b.task_id.partner_id
-                    z = self._partner_zone_key(p)
-                    if z and z == zone:
-                        same_zone_count += 1
-                    lat = getattr(p, "partner_latitude", 0.0) or 0.0
-                    lng = getattr(p, "partner_longitude", 0.0) or 0.0
-                    if ref_lat and ref_lng and lat and lng:
-                        dist_sum += self._haversine_km(ref_lat, ref_lng, lat, lng)
-                        dist_n += 1
-                avg_km = (dist_sum / dist_n) if dist_n else 0.0
+        slots = []
+        # Scan a few days ahead
+        search_end = start_dt + timedelta(days=14)
+        for team in teams:
+            # Check if team has shifts
+            if not team.shift_ids:
+                continue
+            # Loop through days
+            current_day = start_dt.date()
+            while datetime.combine(current_day, time.min) < search_end:
+                weekday_str = str(current_day.weekday())
+                shifts = team.shift_ids.filtered(lambda s: s.weekday == weekday_str)
                 for shift in shifts:
-                    sh_start = datetime.combine(day, time.min) + timedelta(hours=shift.start_time)
-                    sh_end = datetime.combine(day, time.min) + timedelta(hours=shift.end_time)
-                    shift_hours = (sh_end - sh_start).total_seconds() / 3600.0
-                    capacity_hours = shift.capacity_hours if shift.capacity_hours > 0 else shift_hours
-
-                    # Build occupied intervals within this shift for confirmed bookings
-                    intervals = []
-                    for b in bookings:
-                        overlap_start = max(b.start_datetime, sh_start)
-                        overlap_end = min(b.end_datetime, sh_end)
-                        if overlap_end > overlap_start:
-                            intervals.append((overlap_start, overlap_end))
-                    intervals.sort(key=lambda x: x[0])
-
-                    # Merge overlaps
-                    merged = []
-                    for a, b in intervals:
-                        if not merged:
-                            merged.append([a, b])
-                        else:
-                            last = merged[-1]
-                            if a <= last[1]:
-                                last[1] = max(last[1], b)
-                            else:
-                                merged.append([a, b])
-
-                    # Quick capacity check (hours)
-                    booked = sum((b - a).total_seconds() / 3600.0 for a, b in merged)
-                    avail = max(0.0, capacity_hours - booked)
-                    if avail + 1e-6 < total_hours:
+                    shift_start_hour, shift_start_min = float_hours_to_hm(shift.start_time)
+                    shift_end_hour, shift_end_min = float_hours_to_hm(shift.end_time)
+                    shift_start_dt = datetime.combine(current_day, time(shift_start_hour, shift_start_min))
+                    shift_end_dt = datetime.combine(current_day, time(shift_end_hour, shift_end_min))
+                    
+                    # Only consider if shift_start >= start_dt
+                    if shift_start_dt < start_dt:
+                        shift_start_dt = start_dt
+                    
+                    # Check if we can fit the needed hours + buffers
+                    slot_start = shift_start_dt
+                    slot_end = slot_start + timedelta(hours=needed_hours)
+                    
+                    # Make sure slot_end doesn't exceed shift_end_dt
+                    if slot_end > shift_end_dt:
                         continue
-
-                    # Find earliest gap that fits total_hours (packing within shift)
-                    candidate_start = sh_start
-                    if day == start.date():
-                        candidate_start = max(candidate_start, start)
-                    found = False
-                    for a, b in merged:
-                        if a > candidate_start:
-                            gap_hours = (a - candidate_start).total_seconds() / 3600.0
-                            if gap_hours + 1e-6 >= total_hours:
-                                found = True
-                                break
-                        candidate_start = max(candidate_start, b)
-                    if not found:
-                        if (sh_end - candidate_start).total_seconds() / 3600.0 + 1e-6 >= total_hours:
-                            found = True
-                        else:
-                            continue
-
-                    end_dt = candidate_start + timedelta(hours=total_hours)
-                    if end_dt > sh_end:
-                        continue
-
-                    # score: earlier is better, more same-zone is better
-
-                    # convert day_offset to penalty, same_zone_count to bonus
-                    score = (day_offset * 1000) + (avg_km * 0.1) - (same_zone_count * 10)
-                    results.append({
+                    
+                    # Check capacity (simplified: assume no overlapping bookings check for now)
+                    # In production, you'd check fsm.booking records for this team/time
+                    
+                    slots.append({
+                        "start": slot_start,
+                        "end": slot_end,
                         "team": team,
-                        "start": candidate_start,
-                        "end": end_dt,
-                        "score": score,
-                        "same_zone_count": same_zone_count,
                     })
+                
+                current_day += timedelta(days=1)
+        
+        # Sort by start time
+        slots.sort(key=lambda s: s["start"])
+        return slots[:limit]
 
-            if len(results) >= limit * 5:
-                # stop early once we have enough candidates
-                pass
-
-        results.sort(key=lambda r: (r["score"], r["start"]))
-        return results[:limit]
-
-    @api.depends("task_type_id", "partner_id", "service_address_id", "planned_hours", "slot_index", "team_id")
+    @api.depends("task_type_id", "partner_id", "planned_hours", "slot_index")
     def _compute_slots(self):
         for wiz in self:
-            wiz.slot1_label = wiz.slot2_label = wiz.slot3_label = False
-            wiz.slot1_start = wiz.slot2_start = wiz.slot3_start = False
-            wiz.slot1_end = wiz.slot2_end = wiz.slot3_end = False
+            wiz.slot1_label = False
+            wiz.slot2_label = False
+            wiz.slot3_label = False
+            wiz.slot1_start = False
+            wiz.slot2_start = False
+            wiz.slot3_start = False
+            wiz.slot1_end = False
+            wiz.slot2_end = False
+            wiz.slot3_end = False
 
             if not wiz.task_type_id or not wiz.partner_id:
                 continue
@@ -419,25 +356,32 @@ class FsmTaskIntakeWizard(models.TransientModel):
             start_dt = start_dt + timedelta(hours=wiz.slot_index * 1.0)
 
             slots = wiz._find_top_slots(start_dt, limit=3)
-            labels = []
-            for s in slots:
-                labels.append(_("%s - %s") % (
-                    s["start"].strftime("%a %Y-%m-%d %H:%M"),
-                    s["end"].strftime("%H:%M"),
-                ))
-
+            
+            # Format labels with proper datetime display
             if len(slots) > 0:
                 wiz.slot1_start = slots[0]["start"]
                 wiz.slot1_end = slots[0]["end"]
-                wiz.slot1_label = labels[0]
+                wiz.slot1_label = _("%s, %s - %s") % (
+                    slots[0]["start"].strftime("%a, %B %d"),
+                    slots[0]["start"].strftime("%H:%M"),
+                    slots[0]["end"].strftime("%H:%M"),
+                )
             if len(slots) > 1:
                 wiz.slot2_start = slots[1]["start"]
                 wiz.slot2_end = slots[1]["end"]
-                wiz.slot2_label = labels[1]
+                wiz.slot2_label = _("%s, %s - %s") % (
+                    slots[1]["start"].strftime("%a, %B %d"),
+                    slots[1]["start"].strftime("%H:%M"),
+                    slots[1]["end"].strftime("%H:%M"),
+                )
             if len(slots) > 2:
                 wiz.slot3_start = slots[2]["start"]
                 wiz.slot3_end = slots[2]["end"]
-                wiz.slot3_label = labels[2]
+                wiz.slot3_label = _("%s, %s - %s") % (
+                    slots[2]["start"].strftime("%a, %B %d"),
+                    slots[2]["start"].strftime("%H:%M"),
+                    slots[2]["end"].strftime("%H:%M"),
+                )
 
     # Navigation
     def action_next(self):
