@@ -61,9 +61,9 @@ class FsmTaskIntakeWizard(models.TransientModel):
     partner_id = fields.Many2one("res.partner", string="Customer")
     partner_phone = fields.Char(related="partner_id.phone", readonly=True)
     subscription_id = fields.Many2one(
-        "sale.subscription",
+        "sale.order",
         string="Subscription",
-        domain="[('partner_id', '=', partner_id), ('subscription_status', '!=', '6_churn')]",
+        domain="[('partner_id', '=', partner_id)]",
         help="Active subscription for the selected customer."
     )
     show_service_address = fields.Boolean(compute="_compute_service_address_visibility")

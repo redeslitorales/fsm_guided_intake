@@ -35,7 +35,7 @@
                     <!-- Step 2: Customer -->
                     <group invisible="state != 'customer'">
                         <group>
-                            <field name="partner_id" required="1"
+                            <field name="partner_id"
                                    options="{'no_create_edit': True}"/>
                             <field name="subscription_id"
                                    options="{'no_create': True, 'no_open': True}"/>
@@ -61,16 +61,14 @@
                                    options="{'no_create': True, 'no_open': True}"/>
                             <field name="line_ids" nolabel="1" colspan="2">
                                 <tree editable="bottom">
-                                    <field name="product_id" required="1"/>
+                                    <field name="product_id"/>
                                     <field name="quantity"/>
                                     <field name="tracking" invisible="1"/>
                                     <field name="is_service" invisible="1"/>
                                     <field name="lot_id"
-                                           invisible="tracking != 'lot' or is_service"
-                                           required="tracking == 'lot' and not is_service"/>
+                                           invisible="tracking != 'lot' or is_service"/>
                                     <field name="lot_ids" widget="many2many_tags"
-                                           invisible="tracking != 'serial' or is_service"
-                                           required="tracking == 'serial' and not is_service"/>
+                                           invisible="tracking != 'serial' or is_service"/>
                                 </tree>
                             </field>
                         </group>

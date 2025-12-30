@@ -4,7 +4,7 @@
     "version": "17.0.1.2.2",
     "category": "Services/Field Service",
     "summary": "Guided task intake wizard with task types, team capacity scheduling, and stock reservation on scheduling.",
-    "depends": ["project", "industry_fsm", "stock", "sale_management", "fleet"],
+    "depends": ["project", "industry_fsm", "stock", "sale_management", "fleet", "sale"],
     "data": [
         "security/security.xml",
         "security/ir.model.access.csv",
