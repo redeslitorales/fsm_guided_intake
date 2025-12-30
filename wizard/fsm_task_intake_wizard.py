@@ -458,8 +458,11 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "fsm_service_zone_name": self._get_service_zone_name(),
         }
         task_fields = self.env["project.task"]._fields
-        if start_dt and end_dt and end_dt <= start_dt:
-            end_dt = start_dt + timedelta(hours=self.planned_hours or 0.0)
+        start_dt = fields.Datetime.to_datetime(start_dt) if start_dt else start_dt
+        end_dt = fields.Datetime.to_datetime(end_dt) if end_dt else end_dt
+        if start_dt:
+            if not end_dt or end_dt <= start_dt:
+                end_dt = start_dt + timedelta(hours=self.planned_hours or 0.0)
             if end_dt <= start_dt:
                 end_dt = start_dt + timedelta(minutes=1)
         if "planned_date_begin" in task_fields:
