@@ -6,12 +6,12 @@
         <field name="arch" type="xml">
             <form string="Create Field Service Task">
                 <header>
-                    <button name="action_back" string="Back" type="object" class="btn-secondary" 
-                            attrs="{'invisible': [('state', '=', 'type')]}"/>
-                    <button name="action_next" string="Next" type="object" class="btn-primary" 
-                            attrs="{'invisible': [('state', '=', 'confirm')]}"/>
-                    <button name="action_create_task" string="Create Task" type="object" class="btn-primary" 
-                            attrs="{'invisible': [('state', '!=', 'confirm')]}"/>
+                    <button name="action_back" string="Back" type="object" class="btn-secondary"
+                            invisible="state == 'type'"/>
+                    <button name="action_next" string="Next" type="object" class="btn-primary"
+                            invisible="state == 'confirm'"/>
+                    <button name="action_create_task" string="Create Task" type="object" class="btn-primary"
+                            invisible="state != 'confirm'"/>
                     <field name="state" widget="statusbar" statusbar_visible="type,customer,products,schedule,notes,confirm"/>
                 </header>
                 <sheet>
@@ -25,7 +25,7 @@
                     </group>
 
                     <!-- Step 1: Type -->
-                    <group attrs="{'invisible': [('state', '!=', 'type')]}">
+                    <group invisible="state != 'type'">
                         <group>
                             <field name="task_type_id" required="1" 
                                    options="{'no_create': True, 'no_open': True}"/>
@@ -33,30 +33,30 @@
                     </group>
 
                     <!-- Step 2: Customer -->
-                    <group attrs="{'invisible': [('state', '!=', 'customer')]}">
+                    <group invisible="state != 'customer'">
                         <group>
                             <field name="partner_id" required="1" 
                                    options="{'no_create_edit': True}"/>
                             <field name="partner_phone" readonly="1"/>
                             <field name="show_service_address" invisible="1"/>
-                            <field name="service_address_id" 
-                                   attrs="{'invisible': [('show_service_address', '=', False)]}"
+                            <field name="service_address_id"
+                                   invisible="not show_service_address"
                                    options="{'no_create_edit': True}"/>
                         </group>
                     </group>
 
                     <!-- Step 3: Products -->
-                    <group attrs="{'invisible': [('state', '!=', 'products')]}">
+                    <group invisible="state != 'products'">
                         <group>
                             <!-- Only show sales order field if customer has existing orders -->
-                            <div attrs="{'invisible': [('has_existing_sales_orders', '=', True)]}">
+                            <div invisible="has_existing_sales_orders">
                                 <div class="alert alert-info" role="alert">
                                     <p><strong>No existing sales orders found</strong></p>
                                     <p>This customer does not have any sales orders. You can add products manually below.</p>
                                 </div>
                             </div>
-                            <field name="sale_order_id" 
-                                   attrs="{'invisible': [('has_existing_sales_orders', '=', False)]}"
+                            <field name="sale_order_id"
+                                   invisible="not has_existing_sales_orders"
                                    options="{'no_create': True, 'no_open': True}"/>
                         </group>
                         <group>
@@ -66,26 +66,26 @@
                                     <field name="quantity"/>
                                     <field name="tracking" invisible="1"/>
                                     <field name="is_service" invisible="1"/>
-                                    <field name="lot_id" 
-                                           attrs="{'invisible': ['|', ('tracking', '!=', 'lot'), ('is_service', '=', True)],
-                                                   'required': [('tracking', '=', 'lot')]}"/>
-                                    <field name="lot_ids" widget="many2many_tags" 
-                                           attrs="{'invisible': ['|', ('tracking', '!=', 'serial'), ('is_service', '=', True)],
-                                                   'required': [('tracking', '=', 'serial')]}"/>
+                                    <field name="lot_id"
+                                           invisible="tracking != 'lot' or is_service"
+                                           required="tracking == 'lot' and not is_service"/>
+                                    <field name="lot_ids" widget="many2many_tags"
+                                           invisible="tracking != 'serial' or is_service"
+                                           required="tracking == 'serial' and not is_service"/>
                                 </tree>
                             </field>
                         </group>
                     </group>
 
                     <!-- Step 4: Schedule -->
-                    <group attrs="{'invisible': [('state', '!=', 'schedule')]}">
+                    <group invisible="state != 'schedule'">
                         <group string="Filter by Team (Optional)">
                             <field name="team_id" options="{'no_create': True, 'no_open': True}"/>
                             <field name="qualified_team_ids" invisible="1"/>
-                            <div class="o_row" attrs="{'invisible': [('qualified_team_ids', '=', [])]}">
+                            <div class="o_row" invisible="not qualified_team_ids">
                                 <div class="o_form_label">Quick Select Team:</div>
                                 <div class="o_field_widget">
-                                    <field name="qualified_team_ids" widget="many2many_tags" 
+                                    <field name="qualified_team_ids" widget="many2many_tags"
                                            readonly="1"
                                            options="{'color_field': 'color', 'no_create': True}"/>
                                 </div>
@@ -110,13 +110,13 @@
                             <!-- Display the actual datetime labels below each radio option -->
                             <div class="o_row">
                                 <div class="col-12">
-                                    <div class="alert alert-info" attrs="{'invisible': [('slot1_label', '=', False)]}">
+                                    <div class="alert alert-info" invisible="not slot1_label">
                                         <strong>Slot 1:</strong> <field name="slot1_label" readonly="1" nolabel="1"/>
                                     </div>
-                                    <div class="alert alert-info" attrs="{'invisible': [('slot2_label', '=', False)]}">
+                                    <div class="alert alert-info" invisible="not slot2_label">
                                         <strong>Slot 2:</strong> <field name="slot2_label" readonly="1" nolabel="1"/>
                                     </div>
-                                    <div class="alert alert-info" attrs="{'invisible': [('slot3_label', '=', False)]}">
+                                    <div class="alert alert-info" invisible="not slot3_label">
                                         <strong>Slot 3:</strong> <field name="slot3_label" readonly="1" nolabel="1"/>
                                     </div>
                                 </div>
@@ -128,22 +128,22 @@
                     </group>
 
                     <!-- Step 5: Notes -->
-                    <group attrs="{'invisible': [('state', '!=', 'notes')]}">
+                    <group invisible="state != 'notes'">
                         <group>
                             <field name="notes" nolabel="1" placeholder="Enter any internal notes or special instructions..."/>
                         </group>
                     </group>
 
                     <!-- Step 6: Confirm -->
-                    <group attrs="{'invisible': [('state', '!=', 'confirm')]}">
+                    <group invisible="state != 'confirm'">
                         <group string="Summary">
                             <field name="task_type_id" readonly="1"/>
                             <field name="partner_id" readonly="1"/>
-                            <field name="service_address_id" readonly="1" 
-                                   attrs="{'invisible': [('service_address_id', '=', False)]}"/>
+                            <field name="service_address_id" readonly="1"
+                                   invisible="not service_address_id"/>
                             <field name="selected_slot_label" readonly="1" string="Scheduled Time"/>
-                            <field name="team_id" readonly="1" 
-                                   attrs="{'invisible': [('team_id', '=', False)]}"/>
+                            <field name="team_id" readonly="1"
+                                   invisible="not team_id"/>
                         </group>
                         
                         <!-- Warnings -->
@@ -155,33 +155,33 @@
                             <field name="warning_task_type_mapping" invisible="1"/>
                             <field name="warning_no_products_or_so" invisible="1"/>
                             
-                            <div class="alert alert-warning" role="alert" 
-                                 attrs="{'invisible': [('warning_customer_phone_missing', '=', False)]}">
+                            <div class="alert alert-warning" role="alert"
+                                 invisible="not warning_customer_phone_missing">
                                 <i class="fa fa-warning"/> Customer phone number is missing.
                             </div>
-                            <div class="alert alert-warning" role="alert" 
-                                 attrs="{'invisible': [('warning_no_service_address', '=', False)]}">
+                            <div class="alert alert-warning" role="alert"
+                                 invisible="not warning_no_service_address">
                                 <i class="fa fa-warning"/> Service address is not specified.
                             </div>
-                            <div class="alert alert-danger" role="alert" 
-                                 attrs="{'invisible': [('warning_missing_serials', '=', False)]}">
+                            <div class="alert alert-danger" role="alert"
+                                 invisible="not warning_missing_serials">
                                 <i class="fa fa-exclamation-circle"/> Some products require serial/lot numbers.
                             </div>
-                            <div class="alert alert-danger" role="alert" 
-                                 attrs="{'invisible': [('warning_planned_hours_zero', '=', False)]}">
+                            <div class="alert alert-danger" role="alert"
+                                 invisible="not warning_planned_hours_zero">
                                 <i class="fa fa-exclamation-circle"/> Planned hours cannot be zero.
                             </div>
-                            <div class="alert alert-danger" role="alert" 
-                                 attrs="{'invisible': [('warning_task_type_mapping', '=', False)]}">
+                            <div class="alert alert-danger" role="alert"
+                                 invisible="not warning_task_type_mapping">
                                 <i class="fa fa-exclamation-circle"/> Task type must have a project assigned.
                             </div>
-                            <div class="alert alert-danger" role="alert" 
-                                 attrs="{'invisible': [('warning_no_products_or_so', '=', False)]}">
+                            <div class="alert alert-danger" role="alert"
+                                 invisible="not warning_no_products_or_so">
                                 <i class="fa fa-exclamation-circle"/> This task type requires products or a sales order.
                             </div>
                         </group>
                         
-                        <group string="Products/Services" attrs="{'invisible': [('line_ids', '=', [])]}">
+                        <group string="Products/Services" invisible="not line_ids">
                             <field name="line_ids" nolabel="1" readonly="1">
                                 <tree>
                                     <field name="product_id"/>
