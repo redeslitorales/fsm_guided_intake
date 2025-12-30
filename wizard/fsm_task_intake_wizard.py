@@ -466,6 +466,9 @@ class FsmTaskIntakeWizard(models.TransientModel):
             task_vals["date_start"] = start_dt
         if "date_end" in task_fields:
             task_vals["date_end"] = end_dt
+        if "date_deadline" in task_fields:
+            deadline_dt = end_dt or (start_dt + timedelta(hours=self.planned_hours or 0.0))
+            task_vals["date_deadline"] = fields.Date.to_date(deadline_dt)
         if "planned_hours" in self.env["project.task"]._fields:
             task_vals["planned_hours"] = self.planned_hours
         if self.task_type_id.default_stage_id:

@@ -447,6 +447,9 @@ def _haversine_km(self, lat1, lon1, lat2, lon2):
             task_vals["date_start"] = start_dt
         if "date_end" in task_fields:
             task_vals["date_end"] = end_dt
+        if "date_deadline" in task_fields:
+            deadline_dt = end_dt or (start_dt + timedelta(hours=self.planned_hours or 0.0))
+            task_vals["date_deadline"] = fields.Date.to_date(deadline_dt)
         if self.task_type_id.default_stage_id:
             task_vals["stage_id"] = self.task_type_id.default_stage_id.id
         task = self.env["project.task"].create(task_vals)
