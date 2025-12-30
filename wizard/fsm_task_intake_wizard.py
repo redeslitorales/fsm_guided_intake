@@ -60,6 +60,12 @@ class FsmTaskIntakeWizard(models.TransientModel):
     # Step 2
     partner_id = fields.Many2one("res.partner", string="Customer")
     partner_phone = fields.Char(related="partner_id.phone", readonly=True)
+    subscription_id = fields.Many2one(
+        "sale.subscription",
+        string="Subscription",
+        domain="[('partner_id', '=', partner_id), ('subscription_status', '!=', '6_churn')]",
+        help="Active subscription for the selected customer."
+    )
     show_service_address = fields.Boolean(compute="_compute_service_address_visibility")
     service_address_id = fields.Many2one(
         "res.partner",
@@ -109,11 +115,11 @@ class FsmTaskIntakeWizard(models.TransientModel):
     slot2_end = fields.Datetime(compute="_compute_slots")
     slot3_end = fields.Datetime(compute="_compute_slots")
 
-    selected_slot = fields.Selection([
-        ("1", "Slot 1"),
-        ("2", "Slot 2"),
-        ("3", "Slot 3"),
-    ], default="1", string="Choose Appointment")
+    selected_slot = fields.Selection(
+        selection="_get_slot_selection",
+        default="1",
+        string="Choose Appointment",
+    )
     selected_slot_label = fields.Char(
         compute="_compute_selected_slot_label",
         readonly=True,
@@ -161,6 +167,15 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "3": self.slot3_label or _("No available slot"),
         }
 
+    @api.model
+    def _get_slot_selection(self):
+        labels = self.env.context.get("slot_labels") or {}
+        return [
+            ("1", labels.get("1", _("No available slot"))),
+            ("2", labels.get("2", _("No available slot"))),
+            ("3", labels.get("3", _("No available slot"))),
+        ]
+
     @api.onchange("partner_id")
     def _onchange_partner(self):
         if self.partner_id and not self.service_address_id:
@@ -168,6 +183,8 @@ class FsmTaskIntakeWizard(models.TransientModel):
             addrs = self._get_service_addresses(self.partner_id)
             if len(addrs) == 1:
                 self.service_address_id = addrs.id
+        if not self.partner_id or (self.subscription_id and self.subscription_id.partner_id != self.partner_id):
+            self.subscription_id = False
 
     def _get_service_addresses(self, partner):
         return partner.child_ids.filtered(lambda p: p.type in ("delivery", "other", "contact"))
