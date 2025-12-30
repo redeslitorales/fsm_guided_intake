@@ -44,3 +44,25 @@ class FsmTaskType(models.Model):
         for rec in self:
             if rec.default_planned_hours < 0:
                 raise ValidationError(_("Planned hours must be >= 0."))
+
+    @api.constrains("requires_products", "project_id")
+    def _check_project_allows_materials(self):
+        for rec in self:
+            if rec.requires_products and rec.project_id and not getattr(rec.project_id, "allow_materials", True):
+                raise ValidationError(_("Project '%s' must allow materials when products are required.") % rec.project_id.display_name)
+
+    def _validate_materials_allowed(self):
+        for rec in self:
+            if rec.requires_products and rec.project_id and hasattr(rec.project_id, "allow_materials") and not rec.project_id.allow_materials:
+                raise ValidationError(_("Project '%s' must allow materials when products are required.") % rec.project_id.display_name)
+
+    @api.model
+    def create(self, vals):
+        record = super().create(vals)
+        record._validate_materials_allowed()
+        return record
+
+    def write(self, vals):
+        res = super().write(vals)
+        self._validate_materials_allowed()
+        return res

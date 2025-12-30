@@ -6,6 +6,7 @@
         <field name="arch" type="xml">
             <tree>
                 <field name="name"/>
+                <field name="lead_user_id"/>
                 <field name="warehouse_id"/>
                 <field name="active"/>
             </tree>
@@ -23,6 +24,7 @@
                         <field name="active"/>
                         <field name="warehouse_id"/>
                         <field name="calendar_id"/>
+                        <field name="lead_user_id"/>
                     </group>
                     <notebook>
                         <page string="Members">

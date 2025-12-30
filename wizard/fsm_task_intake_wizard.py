@@ -2,6 +2,7 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
 from datetime import datetime, timedelta, time
+import pytz
 import math
 
 def float_hours_to_hm(hours_float):
@@ -161,6 +162,8 @@ class FsmTaskIntakeWizard(models.TransientModel):
 
     def _get_slot_label_map(self):
         self.ensure_one()
+        # Ensure slot labels are up to date before sharing them with the UI context
+        self._compute_slots()
         return {
             "1": self.slot1_label or _("No available slot"),
             "2": self.slot2_label or _("No available slot"),
@@ -169,12 +172,12 @@ class FsmTaskIntakeWizard(models.TransientModel):
 
     @api.model
     def _get_slot_selection(self):
-        labels = self.env.context.get("slot_labels") or {}
-        return [
-            ("1", labels.get("1", _("No available slot"))),
-            ("2", labels.get("2", _("No available slot"))),
-            ("3", labels.get("3", _("No available slot"))),
-        ]
+        labels = self.env.context.get("slot_labels") or {
+            "1": _("Slot 1"),
+            "2": _("Slot 2"),
+            "3": _("Slot 3"),
+        }
+        return [(key, labels.get(key) or _("Slot %s") % key) for key in ["1", "2", "3"]]
 
     @api.onchange("partner_id")
     def _onchange_partner(self):
@@ -241,6 +244,10 @@ class FsmTaskIntakeWizard(models.TransientModel):
             errors.append(_("Customer is required."))
         if self.task_type_id and not self.task_type_id.project_id:
             errors.append(_("Task type must have a project assigned."))
+        if self.task_type_id and self.task_type_id.requires_products:
+            project = self.task_type_id.project_id
+            if project and hasattr(project, "allow_materials") and not project.allow_materials:
+                errors.append(_("Project '%s' must allow materials when products are required.") % project.display_name)
         if (self.planned_hours or 0.0) == 0.0:
             errors.append(_("Planned hours cannot be 0."))
         if self.task_type_id and self.task_type_id.requires_products:
@@ -289,13 +296,41 @@ class FsmTaskIntakeWizard(models.TransientModel):
             }
             wiz.selected_slot_label = labels.get(wiz.selected_slot or "1", _("No available slot"))
 
+    def _to_utc(self, dt):
+        """Convert naive/local dt to UTC naive using user/context tz (default El Salvador if unset)."""
+        if not dt:
+            return dt
+        tz_name = self.env.context.get("tz") or self.env.user.tz or "America/El_Salvador"
+        tz = pytz.timezone(tz_name)
+        local_dt = dt if dt.tzinfo else tz.localize(dt)
+        return local_dt.astimezone(pytz.UTC).replace(tzinfo=None)
+
+    def _round_to_nearest_10(self, dt):
+        """Round datetime to the nearest 10-minute mark."""
+        if not dt:
+            return dt
+        remainder = dt.minute % 10
+        minute = dt.minute - remainder + (10 if remainder >= 5 else 0)
+        if minute == 60:
+            dt = dt.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        else:
+            dt = dt.replace(minute=minute, second=0, microsecond=0)
+        return dt
+
+    def _get_duration_hours(self):
+        """Duration in hours based on task type planned hours with sane floor."""
+        hours = self.task_type_id.default_planned_hours if self.task_type_id else self.planned_hours
+        return max(hours or 0.0, 1.0)
+
     def _find_top_slots(self, start_dt, limit=3):
         """
         Return a list of top available slots sorted by start time.
         Each slot is a dict: {"start": datetime, "end": datetime, "team": fsm.team}.
+        Availability is constrained by the team lead's bookings (across all teams
+        that share the same lead) to ensure the lead is free.
         """
         self.ensure_one()
-        needed_hours = self.planned_hours or 1.0
+        needed_hours = self._get_duration_hours()
         buffer_before = timedelta(minutes=(self.buffer_before_mins or 0))
         buffer_after = timedelta(minutes=(self.buffer_after_mins or 0))
 
@@ -306,10 +341,27 @@ class FsmTaskIntakeWizard(models.TransientModel):
         slots = []
         # Scan a few days ahead
         search_end = start_dt + timedelta(days=14)
+
+        # Precompute team sets per lead to check lead availability across teams
+        lead_to_team_ids = {}
+        leads = teams.mapped("lead_user_id").filtered(lambda u: u)
+        if leads:
+            all_lead_teams = self.env["fsm.team"].search([("lead_user_id", "in", leads.ids)])
+            for lead in leads:
+                lead_to_team_ids[lead.id] = all_lead_teams.filtered(lambda t: t.lead_user_id.id == lead.id).ids
+
         for team in teams:
             # Check if team has shifts
             if not team.shift_ids:
                 continue
+            # Preload existing bookings for the window to avoid overlaps
+            team_ids_for_lead = lead_to_team_ids.get(team.lead_user_id.id, [team.id])
+            existing_bookings = self.env["fsm.booking"].search([
+                ("team_id", "in", team_ids_for_lead),
+                ("state", "!=", "cancelled"),
+                ("start_datetime", "<", search_end),
+                ("end_datetime", ">", start_dt),
+            ])
             # Loop through days
             current_day = start_dt.date()
             while datetime.combine(current_day, time.min) < search_end:
@@ -334,13 +386,21 @@ class FsmTaskIntakeWizard(models.TransientModel):
                         continue
                     
                     # Check capacity (simplified: assume no overlapping bookings check for now)
-                    # In production, you'd check fsm.booking records for this team/time
+                    slot_start_utc = self._to_utc(slot_start)
+                    slot_end_utc = self._to_utc(slot_end)
+                    overlap = existing_bookings.filtered(
+                        lambda b: b.start_datetime < slot_end_utc and b.end_datetime > slot_start_utc
+                    )
+                    if overlap:
+                        slot_start = slot_end = False
+                        continue
                     
-                    slots.append({
-                        "start": slot_start,
-                        "end": slot_end,
-                        "team": team,
-                    })
+                    if slot_start and slot_end:
+                        slots.append({
+                            "start": slot_start,
+                            "end": slot_end,
+                            "team": team,
+                        })
                 
                 current_day += timedelta(days=1)
         
@@ -369,6 +429,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
             start_dt = fields.Datetime.now() + timedelta(minutes=15)
             # Skip ahead based on slot_index (each click moves search start)
             start_dt = start_dt + timedelta(hours=wiz.slot_index * 1.0)
+            start_dt = wiz._round_to_nearest_10(start_dt)
 
             slots = wiz._find_top_slots(start_dt, limit=3)
             
@@ -471,6 +532,17 @@ class FsmTaskIntakeWizard(models.TransientModel):
         if not team:
             raise UserError(_("No FSM team found."))
 
+        debug_payload = {
+            "selected_slot": self.selected_slot,
+            "slot1": (self.slot1_start, self.slot1_end),
+            "slot2": (self.slot2_start, self.slot2_end),
+            "slot3": (self.slot3_start, self.slot3_end),
+            "computed_start": start_dt,
+            "computed_end": end_dt,
+            "planned_hours": self.planned_hours,
+            "team_id": team.id if team else False,
+        }
+
         # Create task
         task_vals = {
             "name": self.task_type_id.name,
@@ -483,31 +555,40 @@ class FsmTaskIntakeWizard(models.TransientModel):
         }
         task_fields = self.env["project.task"]._fields
         start_dt = fields.Datetime.to_datetime(start_dt) if start_dt else start_dt
-        end_dt = fields.Datetime.to_datetime(end_dt) if end_dt else end_dt
-        if start_dt:
-            if not end_dt or end_dt <= start_dt:
-                end_dt = start_dt + timedelta(hours=self.planned_hours or 0.0)
-            if end_dt <= start_dt:
-                end_dt = start_dt + timedelta(minutes=1)
+        # Force duration to the planned hours (task type) to avoid drift or unexpected longer slots.
+        duration_hours = self._get_duration_hours()
+        end_dt = start_dt + timedelta(hours=duration_hours) if start_dt else end_dt
+        if start_dt and end_dt and end_dt <= start_dt:
+            end_dt = start_dt + timedelta(minutes=15)
+            duration_hours = 0.25
+        start_dt_utc = self._to_utc(start_dt) if start_dt else start_dt
+        end_dt_utc = self._to_utc(end_dt) if end_dt else end_dt
         if "planned_date_begin" in task_fields:
-            task_vals["planned_date_begin"] = start_dt
+            task_vals["planned_date_begin"] = start_dt_utc
         if "planned_date_end" in task_fields:
-            task_vals["planned_date_end"] = end_dt
+            task_vals["planned_date_end"] = end_dt_utc
         if "date_start" in task_fields:
-            task_vals["date_start"] = start_dt
+            task_vals["date_start"] = start_dt_utc
         if "date_end" in task_fields:
-            task_vals["date_end"] = end_dt
+            task_vals["date_end"] = end_dt_utc
         if "date_deadline" in task_fields:
             deadline_dt = end_dt or (start_dt + timedelta(hours=self.planned_hours or 0.0))
-            task_vals["date_deadline"] = fields.Date.to_date(deadline_dt)
+            if deadline_dt:
+                if isinstance(deadline_dt, datetime) and deadline_dt.time() != time.min:
+                    deadline_dt = deadline_dt + timedelta(days=1)
+                task_vals["date_deadline"] = fields.Date.to_date(deadline_dt)
+            else:
+                task_vals["date_deadline"] = False
         if "planned_hours" in self.env["project.task"]._fields:
-            task_vals["planned_hours"] = self.planned_hours
+            task_vals["planned_hours"] = duration_hours
         if self.sale_order_id and "sale_order_id" in task_fields:
             task_vals["sale_order_id"] = self.sale_order_id.id
         if self.task_type_id.default_stage_id:
             task_vals["stage_id"] = self.task_type_id.default_stage_id.id
-        task = self.env["project.task"].create(task_vals)
-        task.flush()
+        try:
+            task = self.env["project.task"].create(task_vals)
+        except Exception as e:
+            raise UserError(_("Task creation failed: %s\nDebug payload: %s") % (e, debug_payload))
 
         # Materials
         for l in self.line_ids:
@@ -532,19 +613,21 @@ class FsmTaskIntakeWizard(models.TransientModel):
 
         # Booking
         alloc_hours = (end_dt - start_dt).total_seconds() / 3600.0
-        booking = self.env["fsm.booking"].create({
-            "task_id": task.id,
-            "team_id": team.id,
-            "start_datetime": start_dt,
-            "end_datetime": end_dt,
-            "allocated_hours": alloc_hours,
-            "state": "confirmed",
-        })
-        task.fsm_booking_id = booking.id
+        try:
+            booking = self.env["fsm.booking"].create({
+                "task_id": task.id,
+                "team_id": team.id,
+                "start_datetime": start_dt_utc,
+                "end_datetime": end_dt_utc,
+                "allocated_hours": duration_hours,
+                "state": "confirmed",
+            })
+            task.fsm_booking_id = booking.id
 
-        # Create delivery + reserve (as requested)
-        booking.action_create_or_update_delivery()
-        booking.flush()
+            # Create delivery + reserve (as requested)
+            booking.action_create_or_update_delivery()
+        except Exception as e:
+            raise UserError(_("Booking creation failed: %s\nDebug payload: %s") % (e, debug_payload))
 
         # Open created task
         return {
@@ -553,3 +636,23 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "view_mode": "form",
             "res_id": task.id,
         }
+
+    @api.model
+    def fields_view_get(self, view_id=None, view_type="form", toolbar=False, submenu=False):
+        """
+        Inject dynamic slot labels into the radio selection so users see the actual
+        time strings instead of generic Slot 1/2/3.
+        """
+        res = super().fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar, submenu=submenu)
+        if view_type != "form":
+            return res
+
+        res_id = self.env.context.get("res_id")
+        if not res_id or "selected_slot" not in res.get("fields", {}):
+            return res
+
+        wiz = self.browse(res_id)
+        labels = wiz._get_slot_label_map()
+        selection = [(key, labels.get(key) or _("No available slot")) for key in ["1", "2", "3"]]
+        res["fields"]["selected_slot"]["selection"] = selection
+        return res

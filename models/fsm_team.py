@@ -12,6 +12,7 @@ class FsmTeam(models.Model):
 
     member_ids = fields.Many2many("hr.employee", string="Technicians")
     vehicle_ids = fields.Many2many("fleet.vehicle", string="Vehicles")
+    lead_user_id = fields.Many2one("res.users", string="Team Lead")
 
     calendar_id = fields.Many2one("resource.calendar", string="Working Calendar")
     warehouse_id = fields.Many2one("stock.warehouse", string="Warehouse")

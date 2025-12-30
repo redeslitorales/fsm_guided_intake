@@ -6,12 +6,6 @@
         <field name="arch" type="xml">
             <form string="Create Field Service Task" create="0" class="o_form_nosave">
                 <header>
-                    <button name="action_back" string="Back" type="object" class="btn-secondary"
-                            invisible="state == 'type'"/>
-                    <button name="action_next" string="Next" type="object" class="btn-primary"
-                            invisible="state == 'confirm'"/>
-                    <button name="action_create_task" string="Create Task" type="object" class="btn-primary"
-                            invisible="state != 'confirm'"/>
                     <field name="state" widget="statusbar" statusbar_visible="type,customer,products,schedule,notes,confirm"/>
                 </header>
                 <sheet>
@@ -25,52 +19,46 @@
                     </group>
 
                     <!-- Step 1: Type -->
-                    <group invisible="state != 'type'">
-                        <group>
-                            <field name="task_type_id" required="1" 
-                                   options="{'no_create': True, 'no_open': True}"/>
-                        </group>
+                    <group invisible="state != 'type'" col="1" class="o_colspan_2">
+                        <field name="task_type_id" required="1" colspan="2" class="o_colspan_2"
+                               options="{'no_create': True, 'no_open': True}"/>
                     </group>
 
                     <!-- Step 2: Customer -->
-                    <group invisible="state != 'customer'">
-                        <group>
-                            <field name="partner_id"/>
-                            <field name="subscription_id"
-                                   options="{'no_create': True, 'no_open': True}"/>
-                            <field name="show_service_address" invisible="1"/>
-                            <field name="service_address_id"
-                                   invisible="not show_service_address"
-                                   options="{'no_create_edit': True}"/>
-                        </group>
+                    <group invisible="state != 'customer'" col="1" class="o_colspan_2">
+                        <field name="partner_id" colspan="2" class="o_colspan_2"/>
+                        <field name="subscription_id" colspan="2" class="o_colspan_2"
+                               options="{'no_create': True, 'no_open': True}"/>
+                        <field name="show_service_address" invisible="1"/>
+                        <field name="service_address_id" colspan="2" class="o_colspan_2"
+                               invisible="not show_service_address"
+                               options="{'no_create_edit': True}"/>
                     </group>
 
                     <!-- Step 3: Products -->
-                    <group invisible="state != 'products'">
-                        <group>
-                            <!-- Only show sales order field if customer has existing orders -->
-                            <div invisible="has_existing_sales_orders">
-                                <div class="alert alert-info" role="alert">
-                                    <p><strong>No existing sales orders found</strong></p>
-                                    <p>This customer does not have any sales orders. You can add products manually below.</p>
-                                </div>
+                    <group invisible="state != 'products'" col="1" class="o_colspan_2">
+                        <!-- Only show sales order field if customer has existing orders -->
+                        <div invisible="has_existing_sales_orders" class="o_colspan_2" colspan="2">
+                            <div class="alert alert-info w-100" role="alert">
+                                <p><strong>No existing sales orders found</strong></p>
+                                <p>This customer does not have any sales orders. You can add products manually below.</p>
                             </div>
-                            <field name="sale_order_id"
-                                   invisible="not has_existing_sales_orders"
-                                   options="{'no_create': True, 'no_open': True}"/>
-                            <field name="line_ids" nolabel="1" colspan="2">
-                                <tree editable="bottom">
-                                    <field name="product_id"/>
-                                    <field name="quantity"/>
-                                    <field name="tracking" invisible="1"/>
-                                    <field name="is_service" invisible="1"/>
-                                    <field name="lot_id"
-                                           invisible="tracking != 'lot' or is_service"/>
-                                    <field name="lot_ids" widget="many2many_tags"
-                                           invisible="tracking != 'serial' or is_service"/>
-                                </tree>
-                            </field>
-                        </group>
+                        </div>
+                        <field name="sale_order_id" colspan="2" class="o_colspan_2"
+                               invisible="not has_existing_sales_orders"
+                               options="{'no_create': True, 'no_open': True}"/>
+                        <field name="line_ids" nolabel="1" colspan="2" class="o_colspan_2">
+                            <tree editable="bottom">
+                                <field name="product_id"/>
+                                <field name="quantity"/>
+                                <field name="tracking" invisible="1"/>
+                                <field name="is_service" invisible="1"/>
+                                <field name="lot_id"
+                                       invisible="tracking != 'lot' or is_service"/>
+                                <field name="lot_ids" widget="many2many_tags"
+                                       invisible="tracking != 'serial' or is_service"/>
+                            </tree>
+                        </field>
                     </group>
 
                     <!-- Step 4: Schedule -->
@@ -88,7 +76,7 @@
                             </div>
                         </group>
 
-                        <group string="Available Time Slots">
+                        <group string="Available Time Slots" col="1" class="o_colspan_2">
                             <field name="slot_index" invisible="1"/>
                             <field name="slot1_label" invisible="1"/>
                             <field name="slot2_label" invisible="1"/>
@@ -100,8 +88,25 @@
                             <field name="slot2_end" invisible="1"/>
                             <field name="slot3_end" invisible="1"/>
 
-                            <field name="selected_slot" widget="radio"
+                            <field name="selected_slot" widget="radio" class="o_colspan_2"
                                    options="{'horizontal': false}"/>
+
+                            <div class="o_row o_colspan_2">
+                                <div class="col-12">
+                                    <div class="alert alert-info w-100" style="max-width: 640px;" role="alert" invisible="not slot1_label">
+                                        <strong>Option 1:</strong>
+                                        <field name="slot1_label" readonly="1" nolabel="1"/>
+                                    </div>
+                                    <div class="alert alert-info w-100" style="max-width: 640px;" role="alert" invisible="not slot2_label">
+                                        <strong>Option 2:</strong>
+                                        <field name="slot2_label" readonly="1" nolabel="1"/>
+                                    </div>
+                                    <div class="alert alert-info w-100" style="max-width: 640px;" role="alert" invisible="not slot3_label">
+                                        <strong>Option 3:</strong>
+                                        <field name="slot3_label" readonly="1" nolabel="1"/>
+                                    </div>
+                                </div>
+                            </div>
 
                             <button name="action_more_options" string="Show More Times"
                                     type="object" class="btn-link"/>
@@ -111,59 +116,54 @@
                     <!-- Step 5: Notes -->
                     <group invisible="state != 'notes'">
                         <group>
-                            <field name="notes" nolabel="1" placeholder="Enter any internal notes or special instructions..."/>
+                            <field name="notes" nolabel="1" colspan="2" class="o_colspan_2"
+                                   placeholder="Enter any internal notes or special instructions..."/>
                         </group>
                     </group>
 
                     <!-- Step 6: Confirm -->
-                    <group invisible="state != 'confirm'">
-                        <group string="Summary">
-                            <field name="task_type_id" readonly="1"/>
-                            <field name="partner_id" readonly="1"/>
-                            <field name="service_address_id" readonly="1"
+                    <group invisible="state != 'confirm'" col="1" class="o_colspan_2">
+                        <!-- Warnings full width -->
+                        <field name="warning_customer_phone_missing" invisible="1"/>
+                        <field name="warning_no_service_address" invisible="1"/>
+                        <field name="warning_missing_serials" invisible="1"/>
+                        <field name="warning_planned_hours_zero" invisible="1"/>
+                        <field name="warning_task_type_mapping" invisible="1"/>
+                        <field name="warning_no_products_or_so" invisible="1"/>
+
+                        <div class="o_colspan_2" colspan="2">
+                            <div class="alert alert-warning w-100" role="alert" invisible="not warning_customer_phone_missing">
+                                <i class="fa fa-warning"/> Customer phone number is missing.
+                            </div>
+                            <div class="alert alert-warning w-100" role="alert" invisible="not warning_no_service_address">
+                                <i class="fa fa-warning"/> Service address is not specified.
+                            </div>
+                            <div class="alert alert-danger w-100" role="alert" invisible="not warning_missing_serials">
+                                <i class="fa fa-exclamation-circle"/> Some products require serial/lot numbers.
+                            </div>
+                            <div class="alert alert-danger w-100" role="alert" invisible="not warning_planned_hours_zero">
+                                <i class="fa fa-exclamation-circle"/> Planned hours cannot be zero.
+                            </div>
+                            <div class="alert alert-danger w-100" role="alert" invisible="not warning_task_type_mapping">
+                                <i class="fa fa-exclamation-circle"/> Task type must have a project assigned.
+                            </div>
+                            <div class="alert alert-danger w-100" role="alert" invisible="not warning_no_products_or_so">
+                                <i class="fa fa-exclamation-circle"/> This task type requires products or a sales order.
+                            </div>
+                        </div>
+
+                        <group string="Summary" class="o_colspan_2">
+                            <field name="task_type_id" readonly="1" colspan="2" class="o_colspan_2"/>
+                            <field name="partner_id" readonly="1" colspan="2" class="o_colspan_2"/>
+                            <field name="service_address_id" readonly="1" colspan="2" class="o_colspan_2"
                                    invisible="not service_address_id"/>
-                            <field name="selected_slot_label" readonly="1" string="Scheduled Time"/>
-                            <field name="team_id" readonly="1"
+                            <field name="selected_slot_label" readonly="1" string="Scheduled Time" colspan="2" class="o_colspan_2"/>
+                            <field name="team_id" readonly="1" colspan="2" class="o_colspan_2"
                                    invisible="not team_id"/>
                         </group>
                         
-                        <!-- Warnings -->
-                        <group>
-                            <field name="warning_customer_phone_missing" invisible="1"/>
-                            <field name="warning_no_service_address" invisible="1"/>
-                            <field name="warning_missing_serials" invisible="1"/>
-                            <field name="warning_planned_hours_zero" invisible="1"/>
-                            <field name="warning_task_type_mapping" invisible="1"/>
-                            <field name="warning_no_products_or_so" invisible="1"/>
-                            
-                            <div class="alert alert-warning" role="alert"
-                                 invisible="not warning_customer_phone_missing">
-                                <i class="fa fa-warning"/> Customer phone number is missing.
-                            </div>
-                            <div class="alert alert-warning" role="alert"
-                                 invisible="not warning_no_service_address">
-                                <i class="fa fa-warning"/> Service address is not specified.
-                            </div>
-                            <div class="alert alert-danger" role="alert"
-                                 invisible="not warning_missing_serials">
-                                <i class="fa fa-exclamation-circle"/> Some products require serial/lot numbers.
-                            </div>
-                            <div class="alert alert-danger" role="alert"
-                                 invisible="not warning_planned_hours_zero">
-                                <i class="fa fa-exclamation-circle"/> Planned hours cannot be zero.
-                            </div>
-                            <div class="alert alert-danger" role="alert"
-                                 invisible="not warning_task_type_mapping">
-                                <i class="fa fa-exclamation-circle"/> Task type must have a project assigned.
-                            </div>
-                            <div class="alert alert-danger" role="alert"
-                                 invisible="not warning_no_products_or_so">
-                                <i class="fa fa-exclamation-circle"/> This task type requires products or a sales order.
-                            </div>
-                        </group>
-                        
-                        <group string="Products/Services" invisible="not line_ids">
-                            <field name="line_ids" nolabel="1" readonly="1">
+                        <group string="Products/Services" invisible="not line_ids" class="o_colspan_2">
+                            <field name="line_ids" nolabel="1" readonly="1" colspan="2" class="o_colspan_2">
                                 <tree>
                                     <field name="product_id"/>
                                     <field name="quantity"/>
@@ -175,6 +175,12 @@
                     </group>
                 </sheet>
                 <footer>
+                    <button name="action_back" string="Back" type="object" class="btn-secondary"
+                            invisible="state == 'type'"/>
+                    <button name="action_next" string="Next" type="object" class="btn-primary"
+                            invisible="state == 'confirm'"/>
+                    <button name="action_create_task" string="Create Task" type="object" class="btn-primary"
+                            invisible="state != 'confirm'"/>
                     <button string="Close" special="cancel" class="btn-secondary"/>
                 </footer>
             </form>
