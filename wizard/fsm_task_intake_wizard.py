@@ -69,6 +69,12 @@ class FsmTaskIntakeWizard(models.TransientModel):
     )
 
     # Step 3
+    sale_order_id = fields.Many2one(
+        "sale.order",
+        string="Existing Sales Order",
+        domain="[('partner_id', '=', partner_id)]",
+        help="Select an existing sales order to reuse for this task."
+    )
     line_ids = fields.One2many("fsm.task.intake.wizard.line", "wizard_id", string="Products/Services")
     require_products = fields.Boolean(related="task_type_id.requires_products", readonly=True)
     require_serials = fields.Boolean(related="task_type_id.requires_serials", readonly=True)
@@ -82,6 +88,12 @@ class FsmTaskIntakeWizard(models.TransientModel):
 
     # Step 4
     team_id = fields.Many2one("fsm.team", string="Team", help="Optional. If empty, wizard will choose.")
+    qualified_team_ids = fields.Many2many(
+        "fsm.team",
+        compute="_compute_qualified_teams",
+        string="Qualified Teams",
+        readonly=True,
+    )
     slot_index = fields.Integer(default=0)
     slot1_label = fields.Char(compute="_compute_slots")
     slot2_label = fields.Char(compute="_compute_slots")
@@ -93,7 +105,12 @@ class FsmTaskIntakeWizard(models.TransientModel):
     slot2_end = fields.Datetime(compute="_compute_slots")
     slot3_end = fields.Datetime(compute="_compute_slots")
 
-    selected_slot = fields.Selection([("1","Option 1"),("2","Option 2"),("3","Option 3")], default="1")
+    selected_slot = fields.Selection(selection="_get_slot_selection", default="1")
+    selected_slot_label = fields.Char(
+        compute="_compute_selected_slot_label",
+        readonly=True,
+        string="Selected Appointment",
+    )
 
     # Step 5
     notes = fields.Text(string="Internal Notes")
@@ -110,6 +127,38 @@ class FsmTaskIntakeWizard(models.TransientModel):
         # context may include default_task_type_id
         tt = self.env["fsm.task.type"].browse(self._context.get("default_task_type_id")) if self._context.get("default_task_type_id") else None
         return tt.default_planned_hours if tt else 1.0
+
+    def _get_state_title(self):
+        self.ensure_one()
+        titles = {
+            "type": _("Select Activity"),
+            "customer": _("Select Customer"),
+            "products": _("Select Products"),
+            "schedule": _("Select Date/Time"),
+            "notes": _("Enter Notes"),
+            "confirm": _("Confirm Appointment"),
+        }
+        return titles.get(self.state, "")
+
+    def _get_wizard_title(self):
+        self.ensure_one()
+        return _("Create Field Service Task - %s") % (self._get_state_title() or "")
+
+    def _get_slot_selection(self):
+        labels = (self.env.context or {}).get("slot_labels", {})
+        return [
+            ("1", labels.get("1", _("Option 1"))),
+            ("2", labels.get("2", _("Option 2"))),
+            ("3", labels.get("3", _("Option 3"))),
+        ]
+
+    def _get_slot_label_map(self):
+        self.ensure_one()
+        return {
+            "1": self.slot1_label or _("No available slot"),
+            "2": self.slot2_label or _("No available slot"),
+            "3": self.slot3_label or _("No available slot"),
+        }
 
     @api.onchange("task_type_id")
     def _onchange_task_type(self):
@@ -148,6 +197,21 @@ class FsmTaskIntakeWizard(models.TransientModel):
                 wiz.warning_missing_serials = any(not l.lot_ids for l in serial_lines) or any(not l.lot_id for l in lot_lines)
             else:
                 wiz.warning_missing_serials = False
+
+    @api.depends("task_type_id")
+    def _compute_qualified_teams(self):
+        for wiz in self:
+            wiz.qualified_team_ids = wiz.task_type_id.capable_team_ids
+
+    @api.depends("selected_slot", "slot1_label", "slot2_label", "slot3_label")
+    def _compute_selected_slot_label(self):
+        for wiz in self:
+            label_map = {
+                "1": wiz.slot1_label,
+                "2": wiz.slot2_label,
+                "3": wiz.slot3_label,
+            }
+            wiz.selected_slot_label = label_map.get(wiz.selected_slot) or ""
 
     def _preflight_errors(self):
         self.ensure_one()
@@ -357,14 +421,9 @@ class FsmTaskIntakeWizard(models.TransientModel):
             slots = wiz._find_top_slots(start_dt, limit=3)
             labels = []
             for s in slots:
-                team = s["team"]
-                st = fields.Datetime.to_string(s["start"])
-                en = fields.Datetime.to_string(s["end"])
-                labels.append(_("%s — %s to %s (cluster %+d)") % (
-                    team.name,
+                labels.append(_("%s - %s") % (
                     s["start"].strftime("%a %Y-%m-%d %H:%M"),
                     s["end"].strftime("%H:%M"),
-                    s["same_zone_count"],
                 ))
 
             if len(slots) > 0:
@@ -396,6 +455,8 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "view_mode": "form",
             "res_id": self.id,
             "target": "new",
+            "name": self._get_wizard_title(),
+            "context": dict(self.env.context, slot_labels=self._get_slot_label_map()),
         }
 
     def action_back(self):
@@ -409,6 +470,8 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "view_mode": "form",
             "res_id": self.id,
             "target": "new",
+            "name": self._get_wizard_title(),
+            "context": dict(self.env.context, slot_labels=self._get_slot_label_map()),
         }
 
     def action_more_options(self):
@@ -420,6 +483,8 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "view_mode": "form",
             "res_id": self.id,
             "target": "new",
+            "name": self._get_wizard_title(),
+            "context": dict(self.env.context, slot_labels=self._get_slot_label_map()),
         }
 
     def action_create_task(self):
@@ -478,6 +543,8 @@ class FsmTaskIntakeWizard(models.TransientModel):
             task_vals["date_deadline"] = fields.Date.to_date(deadline_dt)
         if "planned_hours" in self.env["project.task"]._fields:
             task_vals["planned_hours"] = self.planned_hours
+        if self.sale_order_id and "sale_order_id" in task_fields:
+            task_vals["sale_order_id"] = self.sale_order_id.id
         if self.task_type_id.default_stage_id:
             task_vals["stage_id"] = self.task_type_id.default_stage_id.id
         task = self.env["project.task"].create(task_vals)
