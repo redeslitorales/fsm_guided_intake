@@ -457,11 +457,21 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "fsm_service_address_id": (self.service_address_id.id if self.service_address_id else False),
             "fsm_service_zone_name": self._get_service_zone_name(),
         }
+        task_fields = self.env["project.task"]._fields
+        if "planned_date_begin" in task_fields:
+            task_vals["planned_date_begin"] = start_dt
+        if "planned_date_end" in task_fields:
+            task_vals["planned_date_end"] = end_dt
+        if "date_start" in task_fields:
+            task_vals["date_start"] = start_dt
+        if "date_end" in task_fields:
+            task_vals["date_end"] = end_dt
         if "planned_hours" in self.env["project.task"]._fields:
             task_vals["planned_hours"] = self.planned_hours
         if self.task_type_id.default_stage_id:
             task_vals["stage_id"] = self.task_type_id.default_stage_id.id
         task = self.env["project.task"].create(task_vals)
+        task.flush()
 
         # Materials
         for l in self.line_ids:
@@ -498,6 +508,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
 
         # Create delivery + reserve (as requested)
         booking.action_create_or_update_delivery()
+        booking.flush()
 
         # Open created task
         return {
