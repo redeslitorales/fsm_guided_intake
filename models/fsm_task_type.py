@@ -39,6 +39,23 @@ class FsmTaskType(models.Model):
         string="Capable Teams",
     )
 
+    product_category_ids = fields.Many2many(
+        "product.category",
+        "fsm_task_type_product_category_rel",
+        "task_type_id",
+        "category_id",
+        string="Preferred Product Categories",
+        help="When selecting products in the intake wizard, these categories are used as initial filters.",
+    )
+    preferred_team_ids = fields.Many2many(
+        "fsm.team",
+        "fsm_task_type_fsm_team_pref_rel",
+        "fsm_task_type_id",
+        "fsm_team_id",
+        string="Preferred Teams",
+        help="Teams preferred for this task type. They will be highlighted first when scheduling.",
+    )
+
     @api.constrains("default_planned_hours")
     def _check_hours(self):
         for rec in self:

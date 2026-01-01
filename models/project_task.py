@@ -2,6 +2,7 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
+
 class ProjectTaskMaterial(models.Model):
     _name = "fsm.task.material"
     _description = "FSM Task Material"
@@ -20,6 +21,7 @@ class ProjectTaskMaterial(models.Model):
     def _compute_is_service(self):
         for rec in self:
             rec.is_service = rec.product_id and rec.product_id.type == "service"
+
 
 class ProjectTask(models.Model):
     _inherit = "project.task"

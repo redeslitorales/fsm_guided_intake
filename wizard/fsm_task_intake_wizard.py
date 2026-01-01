@@ -91,6 +91,19 @@ class FsmTaskIntakeWizard(models.TransientModel):
     require_serials = fields.Boolean(related="task_type_id.requires_serials", readonly=True)
     require_signature = fields.Boolean(related="task_type_id.requires_signature", readonly=True)
     require_photos = fields.Boolean(related="task_type_id.requires_photos", readonly=True)
+    product_category_ids = fields.Many2many(related="task_type_id.product_category_ids", readonly=True)
+    preferred_team_ids = fields.Many2many(
+        "fsm.team",
+        compute="_compute_preferred_and_capable_teams",
+        string="Preferred Teams",
+        readonly=True,
+    )
+    capable_only_team_ids = fields.Many2many(
+        "fsm.team",
+        compute="_compute_preferred_and_capable_teams",
+        string="Capable Teams",
+        readonly=True,
+    )
 
     # Duration - planned_hours is now computed from task type, not user-editable
     planned_hours = fields.Float(compute="_compute_planned_hours", store=True)
@@ -115,6 +128,16 @@ class FsmTaskIntakeWizard(models.TransientModel):
     slot1_end = fields.Datetime(compute="_compute_slots")
     slot2_end = fields.Datetime(compute="_compute_slots")
     slot3_end = fields.Datetime(compute="_compute_slots")
+    slot1_team_id = fields.Many2one("fsm.team", compute="_compute_slots", readonly=True)
+    slot2_team_id = fields.Many2one("fsm.team", compute="_compute_slots", readonly=True)
+    slot3_team_id = fields.Many2one("fsm.team", compute="_compute_slots", readonly=True)
+    slot1_team_label = fields.Char(compute="_compute_slots", readonly=True)
+    slot2_team_label = fields.Char(compute="_compute_slots", readonly=True)
+    slot3_team_label = fields.Char(compute="_compute_slots", readonly=True)
+    slot1_is_preferred = fields.Boolean(compute="_compute_slots", readonly=True)
+    slot2_is_preferred = fields.Boolean(compute="_compute_slots", readonly=True)
+    slot3_is_preferred = fields.Boolean(compute="_compute_slots", readonly=True)
+    search_start_dt = fields.Datetime(string="Slot Search Start", readonly=False)
 
     selected_slot = fields.Selection(
         selection="_get_slot_selection",
@@ -143,6 +166,14 @@ class FsmTaskIntakeWizard(models.TransientModel):
         """Planned hours now taken from task type record"""
         for wiz in self:
             wiz.planned_hours = wiz.task_type_id.default_planned_hours if wiz.task_type_id else 1.0
+
+    @api.depends("task_type_id")
+    def _compute_preferred_and_capable_teams(self):
+        for wiz in self:
+            preferred = wiz.task_type_id.preferred_team_ids if wiz.task_type_id else self.env["fsm.team"]
+            capable = wiz.task_type_id.capable_team_ids if wiz.task_type_id else self.env["fsm.team"]
+            wiz.preferred_team_ids = preferred
+            wiz.capable_only_team_ids = capable - preferred if capable else self.env["fsm.team"]
 
     def _get_state_title(self):
         self.ensure_one()
@@ -279,12 +310,10 @@ class FsmTaskIntakeWizard(models.TransientModel):
             if not wiz.task_type_id:
                 wiz.qualified_team_ids = self.env["fsm.team"]
                 continue
+            preferred = wiz.task_type_id.preferred_team_ids or self.env["fsm.team"]
             capable = wiz.task_type_id.capable_team_ids
-            if capable:
-                wiz.qualified_team_ids = capable
-            else:
-                # fallback: all active teams
-                wiz.qualified_team_ids = self.env["fsm.team"].search([("active", "=", True)])
+            combined = (preferred | capable) if (preferred or capable) else self.env["fsm.team"]
+            wiz.qualified_team_ids = combined if combined else self.env["fsm.team"].search([("active", "=", True)])
 
     @api.depends("selected_slot", "slot1_label", "slot2_label", "slot3_label")
     def _compute_selected_slot_label(self):
@@ -326,8 +355,8 @@ class FsmTaskIntakeWizard(models.TransientModel):
         """
         Return a list of top available slots sorted by start time.
         Each slot is a dict: {"start": datetime, "end": datetime, "team": fsm.team}.
-        Availability is constrained by the team lead's bookings (across all teams
-        that share the same lead) to ensure the lead is free.
+        Availability is based on the team calendar (team.calendar_id or lead's calendar)
+        and constrained by the team lead's bookings (across all teams that share the same lead).
         """
         self.ensure_one()
         needed_hours = self._get_duration_hours()
@@ -351,8 +380,17 @@ class FsmTaskIntakeWizard(models.TransientModel):
                 lead_to_team_ids[lead.id] = all_lead_teams.filtered(lambda t: t.lead_user_id.id == lead.id).ids
 
         for team in teams:
-            # Check if team has shifts
-            if not team.shift_ids:
+            # Prefer team calendar, fallback to lead calendar, then company/default calendar
+            calendar = (
+                team.calendar_id
+                or getattr(team.lead_user_id, "resource_calendar_id", False)
+                or self.env.company.resource_calendar_id
+                or self.env.ref("resource.resource_calendar_std", raise_if_not=False)
+            )
+            if not calendar:
+                continue
+            attendances = calendar.attendance_ids.filtered(lambda a: not a.display_type)
+            if not attendances:
                 continue
             # Preload existing bookings for the window to avoid overlaps
             team_ids_for_lead = lead_to_team_ids.get(team.lead_user_id.id, [team.id])
@@ -366,42 +404,43 @@ class FsmTaskIntakeWizard(models.TransientModel):
             current_day = start_dt.date()
             while datetime.combine(current_day, time.min) < search_end:
                 weekday_str = str(current_day.weekday())
-                shifts = team.shift_ids.filtered(lambda s: s.weekday == weekday_str)
-                for shift in shifts:
-                    shift_start_hour, shift_start_min = float_hours_to_hm(shift.start_time)
-                    shift_end_hour, shift_end_min = float_hours_to_hm(shift.end_time)
-                    shift_start_dt = datetime.combine(current_day, time(shift_start_hour, shift_start_min))
-                    shift_end_dt = datetime.combine(current_day, time(shift_end_hour, shift_end_min))
-                    
-                    # Only consider if shift_start >= start_dt
+                day_attendances = attendances.filtered(lambda a: a.dayofweek == weekday_str)
+                if day_attendances:
+                    earliest = min(day_attendances.mapped("hour_from"))
+                    latest = max(day_attendances.mapped("hour_to"))
+
+                    start_hour, start_min = float_hours_to_hm(earliest)
+                    end_hour, end_min = float_hours_to_hm(latest)
+                    shift_start_dt = datetime.combine(current_day, time(start_hour, start_min)) + timedelta(minutes=30)
+                    shift_end_dt = datetime.combine(current_day, time(end_hour, end_min)) + timedelta(hours=1)
+
+                    if shift_end_dt <= shift_start_dt:
+                        current_day += timedelta(days=1)
+                        continue
+
                     if shift_start_dt < start_dt:
                         shift_start_dt = start_dt
-                    
-                    # Check if we can fit the needed hours + buffers
-                    slot_start = shift_start_dt
-                    slot_end = slot_start + timedelta(hours=needed_hours)
-                    
-                    # Make sure slot_end doesn't exceed shift_end_dt
-                    if slot_end > shift_end_dt:
-                        continue
-                    
-                    # Check capacity (simplified: assume no overlapping bookings check for now)
-                    slot_start_utc = self._to_utc(slot_start)
-                    slot_end_utc = self._to_utc(slot_end)
-                    overlap = existing_bookings.filtered(
-                        lambda b: b.start_datetime < slot_end_utc and b.end_datetime > slot_start_utc
-                    )
-                    if overlap:
-                        slot_start = slot_end = False
-                        continue
-                    
-                    if slot_start and slot_end:
-                        slots.append({
-                            "start": slot_start,
-                            "end": slot_end,
-                            "team": team,
-                        })
-                
+
+                    # Generate multiple candidate slots across the day window
+                    cursor = shift_start_dt
+                    step = timedelta(minutes=30)
+                    while cursor + timedelta(hours=needed_hours) + buffer_before + buffer_after <= shift_end_dt:
+                        slot_start = cursor + buffer_before
+                        slot_end = slot_start + timedelta(hours=needed_hours) + buffer_after
+
+                        slot_start_utc = self._to_utc(slot_start)
+                        slot_end_utc = self._to_utc(slot_end)
+                        overlap = existing_bookings.filtered(
+                            lambda b: b.start_datetime < slot_end_utc and b.end_datetime > slot_start_utc
+                        )
+                        if not overlap:
+                            slots.append({
+                                "start": slot_start,
+                                "end": slot_end,
+                                "team": team,
+                            })
+                        cursor += step
+
                 current_day += timedelta(days=1)
         
         # Sort by start time
@@ -420,23 +459,45 @@ class FsmTaskIntakeWizard(models.TransientModel):
             wiz.slot1_end = False
             wiz.slot2_end = False
             wiz.slot3_end = False
+            wiz.slot1_team_id = False
+            wiz.slot2_team_id = False
+            wiz.slot3_team_id = False
+            wiz.slot1_team_label = False
+            wiz.slot2_team_label = False
+            wiz.slot3_team_label = False
+            wiz.slot1_is_preferred = False
+            wiz.slot2_is_preferred = False
+            wiz.slot3_is_preferred = False
 
             if not wiz.task_type_id or not wiz.partner_id:
                 continue
             if (wiz.planned_hours or 0.0) <= 0:
                 continue
 
-            start_dt = fields.Datetime.now() + timedelta(minutes=15)
-            # Skip ahead based on slot_index (each click moves search start)
-            start_dt = start_dt + timedelta(hours=wiz.slot_index * 1.0)
-            start_dt = wiz._round_to_nearest_10(start_dt)
+            start_dt = wiz.search_start_dt or (fields.Datetime.now() + timedelta(minutes=15))
+            # Scan forward in 2-hour increments (up to ~7 days) until we find slots.
+            slots = []
+            chosen_start = start_dt
+            max_attempts = 84  # 2-hour steps for 7 days
+            for attempt in range(max_attempts):
+                start_dt_attempt = start_dt + timedelta(hours=attempt * 2.0)
+                start_dt_attempt = wiz._round_to_nearest_10(start_dt_attempt)
+                slots = wiz._find_top_slots(start_dt_attempt, limit=3)
+                if slots:
+                    chosen_start = start_dt_attempt
+                    break
+            # remember the start used; next run will bump from the last shown window
+            wiz.search_start_dt = chosen_start
 
-            slots = wiz._find_top_slots(start_dt, limit=3)
-            
+            # If still nothing, leave defaults; downstream will keep empties.
+
             # Format labels with proper datetime display
             if len(slots) > 0:
                 wiz.slot1_start = slots[0]["start"]
                 wiz.slot1_end = slots[0]["end"]
+                wiz.slot1_team_id = slots[0]["team"]
+                wiz.slot1_team_label = slots[0]["team"].lead_user_id.name or slots[0]["team"].name
+                wiz.slot1_is_preferred = slots[0]["team"] in wiz.preferred_team_ids
                 wiz.slot1_label = _("%s, %s - %s") % (
                     slots[0]["start"].strftime("%a, %B %d"),
                     slots[0]["start"].strftime("%H:%M"),
@@ -445,6 +506,9 @@ class FsmTaskIntakeWizard(models.TransientModel):
             if len(slots) > 1:
                 wiz.slot2_start = slots[1]["start"]
                 wiz.slot2_end = slots[1]["end"]
+                wiz.slot2_team_id = slots[1]["team"]
+                wiz.slot2_team_label = slots[1]["team"].lead_user_id.name or slots[1]["team"].name
+                wiz.slot2_is_preferred = slots[1]["team"] in wiz.preferred_team_ids
                 wiz.slot2_label = _("%s, %s - %s") % (
                     slots[1]["start"].strftime("%a, %B %d"),
                     slots[1]["start"].strftime("%H:%M"),
@@ -453,11 +517,18 @@ class FsmTaskIntakeWizard(models.TransientModel):
             if len(slots) > 2:
                 wiz.slot3_start = slots[2]["start"]
                 wiz.slot3_end = slots[2]["end"]
+                wiz.slot3_team_id = slots[2]["team"]
+                wiz.slot3_team_label = slots[2]["team"].lead_user_id.name or slots[2]["team"].name
+                wiz.slot3_is_preferred = slots[2]["team"] in wiz.preferred_team_ids
                 wiz.slot3_label = _("%s, %s - %s") % (
                     slots[2]["start"].strftime("%a, %B %d"),
                     slots[2]["start"].strftime("%H:%M"),
                     slots[2]["end"].strftime("%H:%M"),
                 )
+            # Advance search start past the last shown slot to avoid repeats
+            last_end = wiz.slot3_end or wiz.slot1_end or wiz.search_start_dt or fields.Datetime.now()
+            if last_end:
+                wiz.search_start_dt = last_end + timedelta(hours=2.0)
 
     # Navigation
     def action_next(self):
@@ -476,7 +547,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "res_id": self.id,
             "target": "new",
             "name": self._get_wizard_title(),
-            "context": dict(self.env.context, slot_labels=self._get_slot_label_map()),
+            "context": dict(self.env.context, slot_labels=self._get_slot_label_map(), search_start_dt=self.search_start_dt),
         }
 
     def action_back(self):
@@ -491,12 +562,14 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "res_id": self.id,
             "target": "new",
             "name": self._get_wizard_title(),
-            "context": dict(self.env.context, slot_labels=self._get_slot_label_map()),
+            "context": dict(self.env.context, slot_labels=self._get_slot_label_map(), search_start_dt=self.search_start_dt),
         }
 
     def action_more_options(self):
         self.ensure_one()
-        self.slot_index += 1
+        # Move search start forward based on last shown slots (or current time)
+        base = self.slot3_end or self.slot1_end or fields.Datetime.now()
+        self.search_start_dt = (base or fields.Datetime.now()) + timedelta(hours=2.0)
         return {
             "type": "ir.actions.act_window",
             "res_model": "fsm.task.intake.wizard",
@@ -504,7 +577,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "res_id": self.id,
             "target": "new",
             "name": self._get_wizard_title(),
-            "context": dict(self.env.context, slot_labels=self._get_slot_label_map()),
+            "context": dict(self.env.context, slot_labels=self._get_slot_label_map(), search_start_dt=self.search_start_dt),
         }
 
     def action_create_task(self):

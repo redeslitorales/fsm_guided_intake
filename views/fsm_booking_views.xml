@@ -55,5 +55,5 @@
         <field name="view_mode">tree,form</field>
     </record>
 
-    <menuitem id="menu_fsm_booking" name="Bookings" parent="menu_fsm_intake_root" action="action_fsm_booking" sequence="40"/>
+    <menuitem id="menu_fsm_booking" name="Bookings" parent="industry_fsm.fsm_menu_root" action="action_fsm_booking" sequence="40"/>
 </odoo>

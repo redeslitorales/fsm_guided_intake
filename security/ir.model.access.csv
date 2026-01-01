@@ -4,5 +4,6 @@ access_fsm_team,fsm.team,model_fsm_team,fsm_guided_intake.group_fsm_intake_user,
 access_fsm_team_shift,fsm.team.shift,model_fsm_team_shift,fsm_guided_intake.group_fsm_intake_user,1,1,1,1
 access_fsm_booking,fsm.booking,model_fsm_booking,fsm_guided_intake.group_fsm_intake_user,1,1,1,1
 access_fsm_task_material,fsm.task.material,model_fsm_task_material,fsm_guided_intake.group_fsm_intake_user,1,1,1,1
+access_fsm_task_material_user,fsm.task.material.user,model_fsm_task_material,base.group_user,1,1,1,1
 access_fsm_intake_wizard,fsm.task.intake.wizard,model_fsm_task_intake_wizard,fsm_guided_intake.group_fsm_intake_user,1,1,1,1
 access_fsm_intake_wizard_line,fsm.task.intake.wizard.line,model_fsm_task_intake_wizard_line,fsm_guided_intake.group_fsm_intake_user,1,1,1,1

@@ -36,17 +36,6 @@
                         <page string="Capabilities">
                             <field name="capable_task_type_ids" widget="many2many_tags"/>
                         </page>
-                        <page string="Shifts">
-                            <field name="shift_ids">
-                                <tree editable="bottom">
-                                    <field name="name"/>
-                                    <field name="weekday"/>
-                                    <field name="start_time"/>
-                                    <field name="end_time"/>
-                                    <field name="capacity_hours"/>
-                                </tree>
-                            </field>
-                        </page>
                     </notebook>
                 </sheet>
             </form>
@@ -59,5 +48,5 @@
         <field name="view_mode">tree,form</field>
     </record>
 
-    <menuitem id="menu_fsm_team" name="Teams" parent="menu_fsm_intake_root" action="action_fsm_team" sequence="30"/>
+    <menuitem id="menu_fsm_team" name="Teams" parent="industry_fsm.fsm_menu_settings" action="action_fsm_team" sequence="30"/>
 </odoo>

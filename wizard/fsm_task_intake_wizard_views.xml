@@ -16,23 +16,25 @@
                         <field name="require_products" invisible="1"/>
                         <field name="require_serials" invisible="1"/>
                         <field name="has_existing_sales_orders" invisible="1"/>
+                        <field name="product_category_ids" invisible="1"/>
                     </group>
 
                     <!-- Step 1: Type -->
                     <group invisible="state != 'type'" col="1" class="o_colspan_2">
                         <field name="task_type_id" required="1" colspan="2" class="o_colspan_2"
-                               options="{'no_create': True, 'no_open': True}"/>
+                               options="{'no_create': True, 'no_open': True, 'no_create_edit': True, 'no_quick_create': True}"/>
                     </group>
 
                     <!-- Step 2: Customer -->
                     <group invisible="state != 'customer'" col="1" class="o_colspan_2">
-                        <field name="partner_id" colspan="2" class="o_colspan_2"/>
+                        <field name="partner_id" colspan="2" class="o_colspan_2"
+                               options="{'no_create': True, 'no_open': True, 'no_create_edit': True, 'no_quick_create': True}"/>
                         <field name="subscription_id" colspan="2" class="o_colspan_2"
-                               options="{'no_create': True, 'no_open': True}"/>
+                               options="{'no_create': True, 'no_open': True, 'no_create_edit': True, 'no_quick_create': True}"/>
                         <field name="show_service_address" invisible="1"/>
                         <field name="service_address_id" colspan="2" class="o_colspan_2"
                                invisible="not show_service_address"
-                               options="{'no_create_edit': True}"/>
+                               options="{'no_create': True, 'no_open': True, 'no_create_edit': True, 'no_quick_create': True}"/>
                     </group>
 
                     <!-- Step 3: Products -->
@@ -46,10 +48,11 @@
                         </div>
                         <field name="sale_order_id" colspan="2" class="o_colspan_2"
                                invisible="not has_existing_sales_orders"
-                               options="{'no_create': True, 'no_open': True}"/>
+                               options="{'no_create': True, 'no_open': True, 'no_create_edit': True, 'no_quick_create': True}"/>
                         <field name="line_ids" nolabel="1" colspan="2" class="o_colspan_2">
                             <tree editable="bottom">
-                                <field name="product_id"/>
+                                <field name="product_id" domain="[('categ_id','child_of', parent.product_category_ids)]"
+                                       options="{'no_create': True, 'no_open': True, 'no_create_edit': True, 'no_quick_create': True}"/>
                                 <field name="quantity"/>
                                 <field name="tracking" invisible="1"/>
                                 <field name="is_service" invisible="1"/>
@@ -66,14 +69,6 @@
                         <group string="Filter by Team (Optional)">
                             <field name="team_id" options="{'no_create': True, 'no_open': True}"/>
                             <field name="qualified_team_ids" invisible="1"/>
-                            <div class="o_row" invisible="not qualified_team_ids">
-                                <div class="o_form_label">Quick Select Team:</div>
-                                <div class="o_field_widget">
-                                    <field name="qualified_team_ids" widget="many2many_tags"
-                                           readonly="1"
-                                           options="{'no_create': True}"/>
-                                </div>
-                            </div>
                         </group>
 
                         <group string="Available Time Slots" col="1" class="o_colspan_2">
@@ -87,23 +82,59 @@
                             <field name="slot1_end" invisible="1"/>
                             <field name="slot2_end" invisible="1"/>
                             <field name="slot3_end" invisible="1"/>
+                            <field name="slot1_team_label" invisible="1"/>
+                            <field name="slot2_team_label" invisible="1"/>
+                            <field name="slot3_team_label" invisible="1"/>
+                            <field name="slot1_is_preferred" invisible="1"/>
+                            <field name="slot2_is_preferred" invisible="1"/>
+                            <field name="slot3_is_preferred" invisible="1"/>
 
                             <field name="selected_slot" widget="radio" class="o_colspan_2"
                                    options="{'horizontal': false}"/>
 
                             <div class="o_row o_colspan_2">
                                 <div class="col-12">
-                                    <div class="alert alert-info w-100" style="max-width: 640px;" role="alert" invisible="not slot1_label">
+                                    <div class="alert alert-success w-100" style="max-width: 640px;" role="alert" invisible="not slot1_label or not slot1_is_preferred">
                                         <strong>Option 1:</strong>
-                                        <field name="slot1_label" readonly="1" nolabel="1"/>
+                                        <span class="badge badge-success" invisible="not slot1_team_label">
+                                            <field name="slot1_team_label" readonly="1" nolabel="1"/>
+                                        </span>
+                                        <field name="slot1_label" readonly="1" nolabel="1" class="ms-1"/>
                                     </div>
-                                    <div class="alert alert-info w-100" style="max-width: 640px;" role="alert" invisible="not slot2_label">
+                                    <div class="alert alert-warning w-100" style="max-width: 640px;" role="alert" invisible="not slot1_label or slot1_is_preferred">
+                                        <strong>Option 1:</strong>
+                                        <span class="badge badge-warning" invisible="not slot1_team_label">
+                                            <field name="slot1_team_label" readonly="1" nolabel="1"/>
+                                        </span>
+                                        <field name="slot1_label" readonly="1" nolabel="1" class="ms-1"/>
+                                    </div>
+                                    <div class="alert alert-success w-100" style="max-width: 640px;" role="alert" invisible="not slot2_label or not slot2_is_preferred">
                                         <strong>Option 2:</strong>
-                                        <field name="slot2_label" readonly="1" nolabel="1"/>
+                                        <span class="badge badge-success" invisible="not slot2_team_label">
+                                            <field name="slot2_team_label" readonly="1" nolabel="1"/>
+                                        </span>
+                                        <field name="slot2_label" readonly="1" nolabel="1" class="ms-1"/>
                                     </div>
-                                    <div class="alert alert-info w-100" style="max-width: 640px;" role="alert" invisible="not slot3_label">
+                                    <div class="alert alert-warning w-100" style="max-width: 640px;" role="alert" invisible="not slot2_label or slot2_is_preferred">
+                                        <strong>Option 2:</strong>
+                                        <span class="badge badge-warning" invisible="not slot2_team_label">
+                                            <field name="slot2_team_label" readonly="1" nolabel="1"/>
+                                        </span>
+                                        <field name="slot2_label" readonly="1" nolabel="1" class="ms-1"/>
+                                    </div>
+                                    <div class="alert alert-success w-100" style="max-width: 640px;" role="alert" invisible="not slot3_label or not slot3_is_preferred">
                                         <strong>Option 3:</strong>
-                                        <field name="slot3_label" readonly="1" nolabel="1"/>
+                                        <span class="badge badge-success" invisible="not slot3_team_label">
+                                            <field name="slot3_team_label" readonly="1" nolabel="1"/>
+                                        </span>
+                                        <field name="slot3_label" readonly="1" nolabel="1" class="ms-1"/>
+                                    </div>
+                                    <div class="alert alert-warning w-100" style="max-width: 640px;" role="alert" invisible="not slot3_label or slot3_is_preferred">
+                                        <strong>Option 3:</strong>
+                                        <span class="badge badge-warning" invisible="not slot3_team_label">
+                                            <field name="slot3_team_label" readonly="1" nolabel="1"/>
+                                        </span>
+                                        <field name="slot3_label" readonly="1" nolabel="1" class="ms-1"/>
                                     </div>
                                 </div>
                             </div>
@@ -194,8 +225,5 @@
         <field name="target">new</field>
         <field name="binding_model_id" ref="model_project_task"/>
     </record>
-
-    <menuitem id="menu_fsm_task_intake_wizard" name="New Task"
-              parent="menu_fsm_intake_root" action="action_fsm_task_intake_wizard" sequence="15"/>
 
 </odoo>

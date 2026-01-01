@@ -37,20 +37,20 @@ class FsmTeam(models.Model):
 class FsmTeamShift(models.Model):
     _name = "fsm.team.shift"
     _description = "FSM Team Shift"
-    _order = "team_id, weekday, start_time"
+    _order = "team_id, pattern, start_time"
 
     team_id = fields.Many2one("fsm.team", required=True, ondelete="cascade")
     name = fields.Char(required=True)
 
-    weekday = fields.Selection([
-        ("0", "Monday"),
-        ("1", "Tuesday"),
-        ("2", "Wednesday"),
-        ("3", "Thursday"),
-        ("4", "Friday"),
-        ("5", "Saturday"),
-        ("6", "Sunday"),
-    ], required=True, default="0")
+    pattern = fields.Selection([
+        ("sun_thu", "Sun-Thu"),
+        ("mon_fri", "Mon-Fri"),
+        ("tue_sat", "Tue-Sat"),
+        ("wed_sun", "Wed-Sun"),
+        ("thu_mon", "Thu-Mon"),
+        ("fri_wed", "Fri-Wed"),
+    ], required=True, default="mon_fri",
+        help="Days this shift covers. Example: Mon-Fri covers Monday through Friday each week.")
 
     start_time = fields.Float(required=True, help="Hour in 24h format. Example: 8.5 for 08:30")
     end_time = fields.Float(required=True, help="Hour in 24h format. Example: 17.0 for 17:00")
@@ -65,3 +65,15 @@ class FsmTeamShift(models.Model):
                 raise ValidationError(_("Shift end time must be after start time."))
             if rec.capacity_hours <= 0:
                 raise ValidationError(_("Shift capacity must be > 0."))
+
+    def _get_weekday_set(self):
+        """Return a set of Python weekday ints covered by this shift pattern."""
+        mapping = {
+            "sun_thu": {6, 0, 1, 2, 3},
+            "mon_fri": {0, 1, 2, 3, 4},
+            "tue_sat": {1, 2, 3, 4, 5},
+            "wed_sun": {2, 3, 4, 5, 6},
+            "thu_mon": {3, 4, 5, 6, 0},
+            "fri_wed": {4, 5, 6, 0, 1, 2},
+        }
+        return mapping.get(self.pattern, set())

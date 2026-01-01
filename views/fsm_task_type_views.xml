@@ -39,12 +39,14 @@
                         <field name="requires_serials"/>
                         <field name="requires_signature"/>
                         <field name="requires_photos"/>
+                        <field name="product_category_ids" widget="many2many_tags"/>
                     </group>
                     <group string="Defaults">
                         <field name="tag_ids" widget="many2many_tags"/>
                     </group>
                     <group string="Capabilities">
                         <field name="capable_team_ids" widget="many2many_tags"/>
+                        <field name="preferred_team_ids" widget="many2many_tags"/>
                     </group>
                     <group string="Checklist">
                         <field name="checklist_subtask_names" placeholder="One checklist item per line"/>
@@ -60,6 +62,6 @@
         <field name="view_mode">tree,form</field>
     </record>
 
-    <menuitem id="menu_fsm_intake_root" name="FSM Intake" parent="industry_fsm.fsm_menu_root" sequence="10" groups="fsm_guided_intake.group_fsm_intake_user"/>
-    <menuitem id="menu_fsm_task_type" name="Task Types" parent="menu_fsm_intake_root" action="action_fsm_task_type" sequence="20"/>
+    <menuitem id="menu_fsm_intake_root" name="FSM Intake" parent="industry_fsm.fsm_menu_root" sequence="10" action="fsm_guided_intake.action_fsm_task_intake_wizard" groups="fsm_guided_intake.group_fsm_intake_user"/>
+    <menuitem id="menu_fsm_task_type" name="Task Types" parent="industry_fsm.fsm_menu_settings" action="action_fsm_task_type" sequence="20"/>
 </odoo>
