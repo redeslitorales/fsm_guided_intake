@@ -7,7 +7,7 @@ class FsmTaskType(models.Model):
     _description = "FSM Task Type"
     _order = "name"
 
-    name = fields.Char(required=True)
+    name = fields.Char(required=True, translate=True)
     active = fields.Boolean(default=True)
 
     project_id = fields.Many2one("project.project", string="Project", required=True)
@@ -28,7 +28,8 @@ class FsmTaskType(models.Model):
     # Optional SOP checklist template (simple v1: create subtasks)
     checklist_subtask_names = fields.Text(
         string="Checklist Items (one per line)",
-        help="When a task is created from this type, these will be created as subtasks."
+        help="When a task is created from this type, these will be created as subtasks.",
+        translate=True,
     )
 
     capable_team_ids = fields.Many2many(
