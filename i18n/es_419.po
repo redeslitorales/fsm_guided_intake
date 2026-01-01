@@ -1,0 +1,1302 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* fsm_guided_intake
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0+e-20231127\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-01-01 20:57+0000\n"
+"PO-Revision-Date: 2026-01-01 15:03-0600\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.8\n"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "%s, %s - %s"
+msgstr "%s, %s - %s"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid "<i class=\"fa fa-exclamation-circle\"/> Planned hours cannot be zero."
+msgstr ""
+"<i class=\"fa fa-exclamation-circle\"/> Las horas planificadas no pueden "
+"ser cero."
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid ""
+"<i class=\"fa fa-exclamation-circle\"/> Some products require serial/lot "
+"numbers."
+msgstr ""
+"<i class=\"fa fa-exclamation-circle\"/> Algunos productos requieren números "
+"de serie o de lote."
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid ""
+"<i class=\"fa fa-exclamation-circle\"/> Task type must have a project "
+"assigned."
+msgstr ""
+"<i class=\"fa fa-exclamation-circle\"/> El tipo de tarea debe tener un "
+"proyecto asignado."
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid ""
+"<i class=\"fa fa-exclamation-circle\"/> This task type requires products or "
+"a sales order."
+msgstr ""
+"<i class=\"fa fa-exclamation-circle\"/> Este tipo de tarea requiere "
+"productos o una orden de venta."
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid "<i class=\"fa fa-warning\"/> Customer phone number is missing."
+msgstr "<i class=\"fa fa-warning\"/> El número de teléfono del cliente falta."
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid "<i class=\"fa fa-warning\"/> Service address is not specified."
+msgstr ""
+"<i class=\"fa fa-warning\"/> No se especifica la dirección de servicio."
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid "<strong>No existing sales orders found</strong>"
+msgstr "<strong>No se han encontrado pedidos de venta existentes</strong>"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid "<strong>Option 1:</strong>"
+msgstr "<strong>Opción 1:</strong>"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid "<strong>Option 2:</strong>"
+msgstr "<strong>Opción 2:</strong>"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid "<strong>Option 3:</strong>"
+msgstr "<strong>Opción 3:</strong>"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__active
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__active
+msgid "Active"
+msgstr "Activo"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_task_intake_wizard__subscription_id
+msgid "Active subscription for the selected customer."
+msgstr "Suscripción activa para el cliente seleccionado."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__allocated_hours
+msgid "Allocated Hours"
+msgstr "Horas asignadas"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_res_config_settings__fsm_auto_invoice_on_stage_done
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_res_config_settings_fsm_guided_intake
+msgid "Auto-create invoice draft when task reaches Done stage"
+msgstr ""
+"Crear automáticamente borrador de factura cuando la tarea llega a la fase "
+"de Finalizada"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid "Available Time Slots"
+msgstr "Franjas horarias disponibles"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid "Back"
+msgstr "Volver"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_product_product__fsm_bill_from_task
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_product_template__fsm_bill_from_task
+msgid "Bill from Field Service Task"
+msgstr "Proyecto de ley de la Tarea de Servicio de Campo"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__fsm_booking_id
+msgid "Booking"
+msgstr "Reserva"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid ""
+"Booking creation failed: %s\n"
+"Debug payload: %s"
+msgstr ""
+"Fallido en la creación de reservas: %s\n"
+"Carga útil de depuración: %s"
+
+#. module: fsm_guided_intake
+#: model:ir.actions.act_window,name:fsm_guided_intake.action_fsm_booking
+#: model:ir.ui.menu,name:fsm_guided_intake.menu_fsm_booking
+msgid "Bookings"
+msgstr "Reservas"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__buffer_after_mins
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__buffer_after_mins
+msgid "Buffer After (min)"
+msgstr "Buffer después (min)"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__buffer_before_mins
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__buffer_before_mins
+msgid "Buffer Before (min)"
+msgstr "Búfer antes (min)"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_fsm_task_type_form
+msgid "Buffers"
+msgstr "Amortiguadores"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_fsm_booking_form
+msgid "Cancel Booking"
+msgstr "Cancelar Reserva"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_booking__state__cancelled
+msgid "Cancelled"
+msgstr "Cancelado"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_fsm_task_type_form
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_fsm_team_form
+msgid "Capabilities"
+msgstr "Capacidades"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__capable_project_ids
+msgid "Capable Projects"
+msgstr "Proyectos capaces"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__capable_task_type_ids
+msgid "Capable Task Types"
+msgstr "Tipos de tareas capaces"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__capable_only_team_ids
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__capable_team_ids
+msgid "Capable Teams"
+msgstr "Equipos capaces"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team_shift__capacity_hours
+msgid "Capacity Hours"
+msgstr "Horario de capacidad"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_fsm_task_type_form
+msgid "Checklist"
+msgstr "Checklist"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__checklist_subtask_names
+msgid "Checklist Items (one per line)"
+msgstr "Elementos de la lista de comprobación (uno por línea)"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__selected_slot
+msgid "Choose Appointment"
+msgstr "Elegir Nombramiento"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_task_intake_wizard__service_address_id
+msgid "Choose a service location if the customer has multiple addresses."
+msgstr "Elige un lugar de servicio si el cliente tiene varias direcciones."
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid "Close"
+msgstr "Cerrar"
+
+#. module: fsm_guided_intake
+#: model:ir.model,name:fsm_guided_intake.model_res_config_settings
+msgid "Config Settings"
+msgstr "Ajustes de configuración"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_task_intake_wizard__state__confirm
+msgid "Confirm"
+msgstr "Confirmar"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Confirm Appointment"
+msgstr "Confirma reserva"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_booking__state__confirmed
+msgid "Confirmed"
+msgstr "Confirmado"
+
+#. module: fsm_guided_intake
+#: model:ir.actions.act_window,name:fsm_guided_intake.action_fsm_task_intake_wizard
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid "Create Field Service Task"
+msgstr "Crear tarea de servicio de campo"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Create Field Service Task - %s"
+msgstr "Crear tarea de servicio de campo - %s"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid "Create Task"
+msgstr "Crear Tarea"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_fsm_booking_form
+msgid "Create/Reserve Delivery"
+msgstr "Entrega/Creación/Reserva"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__create_uid
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__create_uid
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__create_uid
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__create_uid
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__create_uid
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__create_uid
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team_shift__create_uid
+msgid "Created by"
+msgstr "Creado por"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__create_date
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__create_date
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__create_date
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__create_date
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__create_date
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__create_date
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team_shift__create_date
+msgid "Created on"
+msgstr "Creado el"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__partner_id
+#: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_task_intake_wizard__state__customer
+msgid "Customer"
+msgstr "Cliente"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Customer is required."
+msgstr "El cliente es requerido."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_team_shift__pattern
+msgid ""
+"Days this shift covers. Example: Mon-Fri covers Monday through Friday each "
+"week."
+msgstr ""
+"Días que cubre este turno. Ejemplo: de lunes a viernes cubre de lunes a "
+"viernes cada semana."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__default_planned_hours
+msgid "Default Planned Hours"
+msgstr "Horario planificado por defecto"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__default_stage_id
+msgid "Default Stage"
+msgstr "Etapa predeterminada"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__tag_ids
+msgid "Default Tags"
+msgstr "Etiquetas por defecto"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_task_material__product_uom
+msgid "Default unit of measure used for all stock operations."
+msgstr ""
+"Unidad de medida por defecto utilizada para todas las operaciones de stock."
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_fsm_task_type_form
+msgid "Defaults"
+msgstr "Predeterminados"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__picking_id
+msgid "Delivery Order"
+msgstr "Orden de entrega"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__display_name
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__display_name
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__display_name
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__display_name
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__display_name
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__display_name
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team_shift__display_name
+msgid "Display Name"
+msgstr "Nombre para mostrar"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_res_config_settings_fsm_guided_intake
+msgid "Done"
+msgstr "Hecho"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_res_config_settings__fsm_invoice_stage_done_name
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_res_config_settings_fsm_guided_intake
+msgid "Done Stage Name"
+msgstr "Nombre artístico de Done"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__end_datetime
+msgid "End Datetime"
+msgstr "Fecha fin"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team_shift__end_time
+msgid "End Time"
+msgstr "Hora de finalización"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_task_intake_wizard_line__tracking
+msgid "Ensure the traceability of a storable product in your warehouse."
+msgstr "Asegure la trazabilidad de un producto almacenable en su almacén."
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Enter Notes"
+msgstr "Introducir notas"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid "Enter any internal notes or special instructions..."
+msgstr "Introduce cualquier nota interna o instrucciones especiales..."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__sale_order_id
+msgid "Existing Sales Order"
+msgstr "Pedido de venta existente"
+
+#. module: fsm_guided_intake
+#: model:ir.actions.server,name:fsm_guided_intake.ir_cron_fsm_auto_invoice_done_tasks_ir_actions_server
+msgid "FSM Auto Invoice Done Tasks"
+msgstr "Tareas de facturación automática FSM"
+
+#. module: fsm_guided_intake
+#: model:ir.model,name:fsm_guided_intake.model_fsm_booking
+msgid "FSM Booking"
+msgstr "Contratación FSM"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_res_config_settings_fsm_guided_intake
+msgid "FSM Guided Intake"
+msgstr "Admisión guiada FSM"
+
+#. module: fsm_guided_intake
+#: model:ir.model,name:fsm_guided_intake.model_fsm_task_intake_wizard
+msgid "FSM Guided Task Intake Wizard"
+msgstr "Asistente de Entrada de Tareas Guiadas FSM"
+
+#. module: fsm_guided_intake
+#: model:ir.ui.menu,name:fsm_guided_intake.menu_fsm_intake_root
+msgid "FSM Intake"
+msgstr "Admisión de FSM"
+
+#. module: fsm_guided_intake
+#: model:res.groups,name:fsm_guided_intake.group_fsm_intake_user
+msgid "FSM Intake User"
+msgstr "Usuario de admisión FSM"
+
+#. module: fsm_guided_intake
+#: model:ir.model,name:fsm_guided_intake.model_fsm_task_intake_wizard_line
+msgid "FSM Intake Wizard Line"
+msgstr "Línea de Asistente de Admisión FSM"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__fsm_invoiced
+msgid "FSM Invoiced"
+msgstr "FSM facturado"
+
+#. module: fsm_guided_intake
+#: model:ir.model,name:fsm_guided_intake.model_fsm_task_material
+msgid "FSM Task Material"
+msgstr "Material de la Tarea FSM"
+
+#. module: fsm_guided_intake
+#: model:ir.model,name:fsm_guided_intake.model_fsm_task_type
+msgid "FSM Task Type"
+msgstr "Tipo de tarea FSM"
+
+#. module: fsm_guided_intake
+#: model:ir.model,name:fsm_guided_intake.model_fsm_team
+msgid "FSM Team"
+msgstr "Equipo FSM"
+
+#. module: fsm_guided_intake
+#: model:ir.model,name:fsm_guided_intake.model_fsm_team_shift
+msgid "FSM Team Shift"
+msgstr "Cambio de equipo FSM"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid "Filter by Team (Optional)"
+msgstr "Filtrar por equipo (opcional)"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid ""
+"Fix these issues before saving:\n"
+"- %s"
+msgstr ""
+"Soluciona estos problemas antes de guardar:\n"
+"- %s"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_team_shift__pattern__fri_wed
+msgid "Fri-Wed"
+msgstr "Viernes a miércoles"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__has_existing_sales_orders
+msgid "Has Existing Sales Orders"
+msgstr "Tiene pedidos de venta existentes"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_team_shift__end_time
+msgid "Hour in 24h format. Example: 17.0 for 17:00"
+msgstr "Hora en formato 24h. Ejemplo: 17,0 para 17:00"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_team_shift__start_time
+msgid "Hour in 24h format. Example: 8.5 for 08:30"
+msgstr "Hora en formato 24h. Ejemplo: 8,5 para 08:30"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__id
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__id
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__id
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__id
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__id
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__id
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team_shift__id
+msgid "ID"
+msgstr "ID"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_product_product__fsm_bill_from_task
+#: model:ir.model.fields,help:fsm_guided_intake.field_product_template__fsm_bill_from_task
+msgid ""
+"If enabled, this product will be added to Sales Orders/Invoices generated "
+"from field service tasks."
+msgstr ""
+"Si está habilitado, este producto se añadirá a las Órdenes de Venta/"
+"Facturas generadas por tareas de servicio de campo."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__notes
+msgid "Internal Notes"
+msgstr "Notas internas"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_res_config_settings_fsm_guided_intake
+msgid "Invoicing"
+msgstr "Facturación"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__is_service
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__is_service
+msgid "Is Service"
+msgstr "Es servicio"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__fsm_last_invoiced_so_id
+msgid "Last Invoiced SO"
+msgstr "Última pareja facturada"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__write_uid
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__write_uid
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__write_uid
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__write_uid
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__write_uid
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__write_uid
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team_shift__write_uid
+msgid "Last Updated by"
+msgstr "Actualizado por"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__write_date
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__write_date
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__write_date
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__write_date
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__write_date
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__write_date
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team_shift__write_date
+msgid "Last Updated on"
+msgstr "Actualizado el"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__fsm_material_ids
+msgid "Materials/Services"
+msgstr "Materiales/Servicios"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_fsm_team_form
+msgid "Members"
+msgstr "Miembros"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_team_shift__pattern__mon_fri
+msgid "Mon-Fri"
+msgstr "Lun-Vie"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__name
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__name
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__name
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team_shift__name
+msgid "Name"
+msgstr "Nombre"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_project_task_tree_fsm_guided_inherit
+msgid "New"
+msgstr "Nuevo"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid "Next"
+msgstr "Siguiente"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "No FSM team found."
+msgstr "No se encontró ningún equipo FSM."
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "No available schedule slot found."
+msgstr "No se ha encontrado ninguna franja disponible en el horario."
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "No available slot"
+msgstr "No hay espacio disponible"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/fsm_booking.py:0
+#, python-format
+msgid "No outgoing picking type found."
+msgstr "No se encontró ningún tipo de selección saliente."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_task_intake_wizard__state__notes
+msgid "Notes"
+msgstr "Notas"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_fsm_task_type_form
+msgid "One checklist item per line"
+msgstr "Un ítem de la lista de comprobación por línea"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_task_intake_wizard__team_id
+msgid "Optional. If empty, wizard will choose."
+msgstr "Opcional. Si está vacío, el mago elegirá."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team_shift__pattern
+msgid "Pattern"
+msgstr "Patrón"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__partner_phone
+msgid "Phone"
+msgstr "Teléfono"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__planned_hours
+msgid "Planned Hours"
+msgstr "Horas planificadas"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Planned hours cannot be 0."
+msgstr "Las horas planificadas no pueden ser 0."
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/fsm_task_type.py:0
+#, python-format
+msgid "Planned hours must be >= 0."
+msgstr "Las horas planificadas deben ser >= 0."
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Please select a customer before continuing."
+msgstr "Por favor, selecciona un cliente antes de continuar."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__product_category_ids
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__product_category_ids
+msgid "Preferred Product Categories"
+msgstr "Categorías de productos preferidas"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__preferred_team_ids
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__preferred_team_ids
+msgid "Preferred Teams"
+msgstr "Equipos preferidos"
+
+#. module: fsm_guided_intake
+#: model:ir.model,name:fsm_guided_intake.model_product_template
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__product_id
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__product_id
+msgid "Product"
+msgstr "Producto"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Product '%s' requires a lot number."
+msgstr "El producto '%s' requiere un número de lote."
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Product '%s' requires serial numbers."
+msgstr "El producto '%s' requiere números de serie."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__product_uom_qty
+msgid "Product Uom Qty"
+msgstr "Cantidad de UdM del Producto"
+
+#. module: fsm_guided_intake
+#: model:ir.model,name:fsm_guided_intake.model_product_product
+msgid "Product Variant"
+msgstr "Variante del producto"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_task_intake_wizard__state__products
+msgid "Products"
+msgstr "Productos"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__line_ids
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid "Products/Services"
+msgstr "Productos/Servicios"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__project_id
+msgid "Project"
+msgstr "Proyecto"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/fsm_task_type.py:0
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Project '%s' must allow materials when products are required."
+msgstr ""
+"El proyecto '%s' debe permitir materiales cuando se requieren productos."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__qualified_team_ids
+msgid "Qualified Teams"
+msgstr "Equipos clasificados"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__quantity
+msgid "Quantity"
+msgstr "Cantidad"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_fsm_task_type_form
+msgid "Requirements"
+msgstr "Requisitos"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__require_photos
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__requires_photos
+msgid "Requires Photos"
+msgstr "Requiere fotos"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__require_products
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__requires_products
+msgid "Requires Products"
+msgstr "Requiere productos"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__require_serials
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__requires_serials
+msgid "Requires Serials"
+msgstr "Requiere números de serie"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__require_signature
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__requires_signature
+msgid "Requires Signature"
+msgstr "Requiere firma"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_task_intake_wizard__state__schedule
+msgid "Schedule"
+msgstr "Programar"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid "Scheduled Time"
+msgstr "Horario programado"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Select Activity"
+msgstr "Seleccionar Tipo de Actividad"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Select Customer"
+msgstr "Seleccione un Cliente"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Select Date/Time"
+msgstr "Seleccionar fecha/hora"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Select Products"
+msgstr "Seleccionar productos"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_task_intake_wizard__sale_order_id
+msgid "Select an existing sales order to reuse for this task."
+msgstr ""
+"Selecciona un pedido de venta existente para reutilizarlo en esta tarea."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__selected_slot_label
+msgid "Selected Appointment"
+msgstr "Nombramiento seleccionado"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__lot_id
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__lot_id
+msgid "Serial/Lot"
+msgstr "Serial/Lot"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__lot_ids
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__lot_ids
+msgid "Serials"
+msgstr "Números de Serie"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__service_address_id
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__fsm_service_address_id
+msgid "Service Address"
+msgstr "Dirección de servicio"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__fsm_service_zone_name
+msgid "Service Zone"
+msgstr "Zona de servicio"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/project_task.py:0
+#, python-format
+msgid "Set a customer first."
+msgstr "Pone primero un cliente."
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/fsm_team.py:0
+#, python-format
+msgid "Shift capacity must be > 0."
+msgstr "La capacidad del turno debe ser > 0."
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/fsm_team.py:0
+#, python-format
+msgid "Shift end time must be after start time."
+msgstr "La hora de fin del turno debe ser después de la hora de inicio."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__shift_ids
+msgid "Shifts"
+msgstr "Turnos"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid "Show More Times"
+msgstr "Mostrar más veces"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__show_service_address
+msgid "Show Service Address"
+msgstr "Dirección de servicio del espectáculo"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Slot %s"
+msgstr "Tragaperras %s"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Slot 1"
+msgstr "Opcion 1"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Slot 2"
+msgstr "Opcion 2"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Slot 3"
+msgstr "Opcion 3"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot_index
+msgid "Slot Index"
+msgstr "Índice de tragaperras"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__search_start_dt
+msgid "Slot Search Start"
+msgstr "Inicio de la búsqueda de ranuras"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot1_end
+msgid "Slot1 End"
+msgstr "Opcion End"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot1_is_preferred
+msgid "Slot1 Is Preferred"
+msgstr "Se prefiere la ranura 1"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot1_label
+msgid "Slot1 Label"
+msgstr "Sello Slot1"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot1_start
+msgid "Slot1 Start"
+msgstr "Inicio en la ranura 1"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot1_team_id
+msgid "Slot1 Team"
+msgstr "Equipo Slot1"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot1_team_label
+msgid "Slot1 Team Label"
+msgstr "Sello de equipo Slot1"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot2_end
+msgid "Slot2 End"
+msgstr "Fin de la ranura 2"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot2_is_preferred
+msgid "Slot2 Is Preferred"
+msgstr "Se prefiere el Slot2"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot2_label
+msgid "Slot2 Label"
+msgstr "Sello Slot2"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot2_start
+msgid "Slot2 Start"
+msgstr "Inicio en la Ranura 2"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot2_team_id
+msgid "Slot2 Team"
+msgstr "Equipo Slot2"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot2_team_label
+msgid "Slot2 Team Label"
+msgstr "Etiqueta del equipo Slot2"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot3_end
+msgid "Slot3 End"
+msgstr "Slot3 End"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot3_is_preferred
+msgid "Slot3 Is Preferred"
+msgstr "Se prefiere la ranura 3"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot3_label
+msgid "Slot3 Label"
+msgstr "Sello Slot3"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot3_start
+msgid "Slot3 Start"
+msgstr "Inicio en la Ranura 3"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot3_team_id
+msgid "Slot3 Team"
+msgstr "Equipo Slot3"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot3_team_label
+msgid "Slot3 Team Label"
+msgstr "Sello del equipo Slot3"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_res_config_settings_fsm_guided_intake
+msgid "Stage name to match (case-insensitive) to trigger auto-invoicing."
+msgstr ""
+"Nombre artístico para que coincida (insensible a mayúsculas) para activar "
+"la facturación automática."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__start_datetime
+msgid "Start Datetime"
+msgstr "Inicio Fecha y hora"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team_shift__start_time
+msgid "Start Time"
+msgstr "Hora de inicio"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__state
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__state
+msgid "State"
+msgstr "Estado"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__subscription_id
+msgid "Subscription"
+msgstr "Suscripción"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid "Summary"
+msgstr "Resumen"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_team_shift__pattern__sun_thu
+msgid "Sun-Thu"
+msgstr "Dom-Jue"
+
+#. module: fsm_guided_intake
+#: model:ir.model,name:fsm_guided_intake.model_project_task
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__task_id
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__task_id
+msgid "Task"
+msgstr "Tarea"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__fsm_task_type_id
+msgid "Task Type"
+msgstr "Tipo de Tarea"
+
+#. module: fsm_guided_intake
+#: model:ir.actions.act_window,name:fsm_guided_intake.action_fsm_task_type
+#: model:ir.ui.menu,name:fsm_guided_intake.menu_fsm_task_type
+msgid "Task Types"
+msgstr "Tipos de Tarea"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid ""
+"Task creation failed: %s\n"
+"Debug payload: %s"
+msgstr ""
+"Fallo en la creación de tareas: %s\n"
+"Carga útil de depuración: %s"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/fsm_booking.py:0
+#, python-format
+msgid "Task has no customer; cannot create delivery order."
+msgstr "La tarea no tiene cliente; No se puede crear la orden de entrega."
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Task type is required."
+msgstr "Se requiere el tipo de tarea."
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Task type must have a project assigned."
+msgstr "El tipo de tarea debe tener un proyecto asignado."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__team_id
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__team_id
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team_shift__team_id
+msgid "Team"
+msgstr "Equipo"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/fsm_booking.py:0
+#, python-format
+msgid "Team '%s' has no warehouse set."
+msgstr "El equipo '%s' no tiene un set de almacén."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__lead_user_id
+msgid "Team Lead"
+msgstr "Líder de equipo"
+
+#. module: fsm_guided_intake
+#: model:ir.actions.act_window,name:fsm_guided_intake.action_fsm_team
+#: model:ir.ui.menu,name:fsm_guided_intake.menu_fsm_team
+msgid "Teams"
+msgstr "Equipos"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_task_type__preferred_team_ids
+msgid ""
+"Teams preferred for this task type. They will be highlighted first when "
+"scheduling."
+msgstr ""
+"Equipos preferidos para este tipo de tarea. Se destacarán primero al "
+"programar."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__member_ids
+msgid "Technicians"
+msgstr "Técnicos"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_booking__state__tentative
+msgid "Tentative"
+msgstr "Tentativa"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid ""
+"This customer does not have any sales orders. You can add products manually "
+"below."
+msgstr ""
+"Este cliente no tiene ningún pedido de venta. Puedes añadir productos "
+"manualmente a continuación."
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid ""
+"This task type requires products. Please select a Sales Order or add "
+"products."
+msgstr ""
+"Este tipo de tarea requiere productos. Por favor, selecciona un pedido de "
+"venta o añade productos."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_team_shift__pattern__thu_mon
+msgid "Thu-Mon"
+msgstr "Jue-Lun"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_team_shift__capacity_hours
+msgid "Total hours the team can perform during this shift."
+msgstr "Horas totales que el equipo puede realizar durante este turno."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__tracking
+msgid "Tracking"
+msgstr "Seguimiento"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_team_shift__pattern__tue_sat
+msgid "Tue-Sat"
+msgstr "Martes a sábado"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_task_intake_wizard__state__type
+msgid "Type"
+msgstr "Tipo"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__product_uom
+msgid "Unit of Measure"
+msgstr "Unidad de medida"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__vehicle_ids
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_fsm_team_form
+msgid "Vehicles"
+msgstr "Vehículos"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__warehouse_id
+msgid "Warehouse"
+msgstr "Almacén"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__warning_customer_phone_missing
+msgid "Warning Customer Phone Missing"
+msgstr "Advertencia: Teléfono del cliente desaparecido"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__warning_missing_serials
+msgid "Warning Missing Serials"
+msgstr "Advertencia: Números de serie desaparecidos"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__warning_no_products_or_so
+msgid "Warning No Products Or So"
+msgstr "Advertencia: No hay productos ni nada por el estilo"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__warning_no_service_address
+msgid "Warning No Service Address"
+msgstr "Advertencia: No hay dirección de servicio."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__warning_planned_hours_zero
+msgid "Warning Planned Hours Zero"
+msgstr "Advertencia: Horas Cero planificadas"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__warning_task_type_mapping
+msgid "Warning Task Type Mapping"
+msgstr "Mapeo de tipos de tarea de advertencia"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_team_shift__pattern__wed_sun
+msgid "Wed-Sun"
+msgstr "Miércoles-domingo"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__task_type_id
+msgid "What are we doing?"
+msgstr "¿Qué estamos haciendo?"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_task_type__checklist_subtask_names
+msgid ""
+"When a task is created from this type, these will be created as subtasks."
+msgstr ""
+"Cuando se crea una tarea a partir de este tipo, estas se crearán como "
+"subtareas."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_res_config_settings__fsm_invoice_stage_done_name
+msgid ""
+"When a task's stage name matches this value (case-insensitive), the system "
+"will prepare the Sales Order and create a draft invoice."
+msgstr ""
+"Cuando el nombre de la etapa de una tarea coincide con este valor "
+"(insensible a mayúsculas), el sistema preparará la Orden de Venta y creará "
+"un borrador de factura."
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_res_config_settings_fsm_guided_intake
+msgid ""
+"When enabled, moving a task to the configured Done stage will automatically "
+"create/update the Sales Order from task materials and generate a draft "
+"invoice."
+msgstr ""
+"Cuando está activada, mover una tarea a la etapa de Finalizado configurada "
+"creará/actualizará automáticamente la Orden de Venta a partir de los "
+"materiales de la tarea y generará un borrador de factura."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_task_intake_wizard__product_category_ids
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_task_type__product_category_ids
+msgid ""
+"When selecting products in the intake wizard, these categories are used as "
+"initial filters."
+msgstr ""
+"Al seleccionar productos en el asistente de admisión, estas categorías se "
+"utilizan como filtros iniciales."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__wizard_id
+msgid "Wizard"
+msgstr "Asistente"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__calendar_id
+msgid "Working Calendar"
+msgstr "Calendario de trabajo"
