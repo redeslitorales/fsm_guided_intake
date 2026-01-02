@@ -57,6 +57,25 @@ class FsmTaskType(models.Model):
         help="Teams preferred for this task type. They will be highlighted first when scheduling.",
     )
 
+    # Install validation (fiber)
+    enforce_install_validation = fields.Boolean(
+        string="Enforce Install Validation",
+        help="Block closing tasks unless install worksheet is complete and optical levels are in range."
+    )
+    requires_fiber_install = fields.Boolean(
+        string="Requires Fiber Install",
+        help="Show fiber install worksheet on tasks of this type.",
+        default=False,
+    )
+    default_pon_type = fields.Selection(
+        [("gpon", "GPON"), ("xgspon", "XGS-PON")],
+        string="Default PON Type",
+    )
+    optics_rx_min = fields.Float(string="RX Min (dBm)", default=-27.0, digits=(16, 2))
+    optics_rx_max = fields.Float(string="RX Max (dBm)", default=-8.0, digits=(16, 2))
+    optics_tx_min = fields.Float(string="TX Min (dBm)", default=0.5, digits=(16, 2))
+    optics_tx_max = fields.Float(string="TX Max (dBm)", default=5.0, digits=(16, 2))
+
     @api.constrains("default_planned_hours")
     def _check_hours(self):
         for rec in self:

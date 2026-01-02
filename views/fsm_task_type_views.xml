@@ -39,7 +39,16 @@
                         <field name="requires_serials"/>
                         <field name="requires_signature"/>
                         <field name="requires_photos"/>
+                        <field name="requires_fiber_install"/>
                         <field name="product_category_ids" widget="many2many_tags"/>
+                    </group>
+                    <group string="Install Validation (Fiber)">
+                        <field name="enforce_install_validation"/>
+                        <field name="default_pon_type"/>
+                        <field name="optics_rx_min"/>
+                        <field name="optics_rx_max"/>
+                        <field name="optics_tx_min"/>
+                        <field name="optics_tx_max"/>
                     </group>
                     <group string="Defaults">
                         <field name="tag_ids" widget="many2many_tags"/>

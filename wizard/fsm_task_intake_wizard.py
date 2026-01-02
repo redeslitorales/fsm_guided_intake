@@ -626,6 +626,21 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "fsm_service_address_id": (self.service_address_id.id if self.service_address_id else False),
             "fsm_service_zone_name": self._get_service_zone_name(),
         }
+        if self.task_type_id.default_pon_type and "fsm_pon_type" in self.env["project.task"]._fields:
+            task_vals["fsm_pon_type"] = self.task_type_id.default_pon_type
+        # Assign responsible + followers from the selected team (lead user + member users)
+        assignee_user_ids = []
+        if team and team.lead_user_id:
+            assignee_user_ids.append(team.lead_user_id.id)
+        if team and team.member_ids:
+            member_users = team.member_ids.mapped("user_id").filtered(lambda u: u)
+            assignee_user_ids += member_users.ids
+        assignee_user_ids = list(dict.fromkeys(assignee_user_ids))  # dedupe while preserving order
+        if assignee_user_ids:
+            if "user_id" in task_vals or "user_id" in self.env["project.task"]._fields:
+                task_vals["user_id"] = assignee_user_ids[0]
+            if "user_ids" in self.env["project.task"]._fields:
+                task_vals["user_ids"] = [(6, 0, assignee_user_ids)]
         task_fields = self.env["project.task"]._fields
         start_dt = fields.Datetime.to_datetime(start_dt) if start_dt else start_dt
         # Force duration to the planned hours (task type) to avoid drift or unexpected longer slots.
