@@ -17,6 +17,19 @@
         </field>
     </record>
 
+    <!-- Compact tree for "Search More" in activity selection -->
+    <record id="view_fsm_task_type_tree_compact" model="ir.ui.view">
+        <field name="name">fsm.task.type.tree.compact</field>
+        <field name="model">fsm.task.type</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name" width="300"/>
+                <field name="default_planned_hours"/>
+            </tree>
+        </field>
+    </record>
+
     <record id="view_fsm_task_type_form" model="ir.ui.view">
         <field name="name">fsm.task.type.form</field>
         <field name="model">fsm.task.type</field>
@@ -30,17 +43,22 @@
                         <field name="default_stage_id"/>
                         <field name="default_planned_hours"/>
                     </group>
-                    <group string="Buffers">
-                        <field name="buffer_before_mins"/>
-                        <field name="buffer_after_mins"/>
-                    </group>
                     <group string="Requirements">
                         <field name="requires_products"/>
                         <field name="requires_serials"/>
                         <field name="requires_signature"/>
                         <field name="requires_photos"/>
+                        <field name="never_has_product"/>
+                        <field name="include_in_wizard"/>
+                        <field name="is_client_task"/>
                         <field name="requires_fiber_install"/>
                         <field name="product_category_ids" widget="many2many_tags"/>
+                        <field name="subscription_category_ids" widget="many2many_tags"/>
+                    </group>
+                    <group string="Scheduling">
+                        <field name="buffer_before_mins"/>
+                        <field name="buffer_after_mins"/>
+                        <field name="may_be_rescheduled"/>
                     </group>
                     <group string="Install Validation (Fiber)">
                         <field name="enforce_install_validation"/>

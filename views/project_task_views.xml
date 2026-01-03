@@ -25,7 +25,27 @@
         <!-- Fall back to base project task form to avoid missing xmlid in some builds -->
         <field name="inherit_id" ref="project.view_task_form2"/>
         <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <field name="fsm_planned_hours_warning" invisible="1"/>
+                <field name="fsm_default_planned_hours" invisible="1"/>
+                <field name="fsm_planned_hours_warning_text" invisible="1"/>
+                <div class="alert alert-warning" invisible="not fsm_planned_hours_warning">
+                    <i class="fa fa-exclamation-circle"/>
+                    <field name="fsm_planned_hours_warning_text" nolabel="1" readonly="1"/>
+                </div>
+            </xpath>
             <xpath expr="//notebook" position="inside">
+                <page string="Materials/Services">
+                    <field name="fsm_material_ids" nolabel="1">
+                        <tree editable="bottom">
+                            <field name="product_id"/>
+                            <field name="product_uom_qty"/>
+                            <field name="lot_id"/>
+                            <field name="lot_ids" widget="many2many_tags"/>
+                            <field name="is_service" invisible="1"/>
+                        </tree>
+                    </field>
+                </page>
                 <!-- Ensure control field is in the view for modifier evaluation -->
                 <field name="fsm_requires_fiber_install" invisible="1"/>
                 <page string="Fiber Install" invisible="not fsm_requires_fiber_install">

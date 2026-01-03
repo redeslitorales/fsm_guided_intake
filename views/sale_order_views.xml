@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_form_fsm_intake_button" model="ir.ui.view">
+        <field name="name">sale.order.form.fsm.intake.button</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="%(fsm_guided_intake.action_fsm_task_intake_wizard)d"
+                        string="Create Appointment"
+                        translate="True"
+                        type="action"
+                        class="oe_highlight"
+                        context="{'default_partner_id': partner_id, 'default_subscription_id': id, 'default_sale_order_id': id, 'default_state': 'type'}"
+                        invisible="(not partner_id) or (state not in ('sale','done'))"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

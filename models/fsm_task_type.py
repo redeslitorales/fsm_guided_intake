@@ -24,6 +24,26 @@ class FsmTaskType(models.Model):
     requires_serials = fields.Boolean(default=False)
     requires_signature = fields.Boolean(default=False)
     requires_photos = fields.Boolean(default=False)
+    never_has_product = fields.Boolean(
+        string="Never Has Product",
+        help="Skip the Products step in the intake wizard for this task type.",
+        default=False,
+    )
+    is_client_task = fields.Boolean(
+        string="Client Task",
+        help="Show this task type only when a customer/subscription is selected in the wizard.",
+        default=False,
+    )
+    may_be_rescheduled = fields.Boolean(
+        string="May Be Rescheduled",
+        help="Indicates this task type can be rescheduled without extra approval.",
+        default=True,
+    )
+    include_in_wizard = fields.Boolean(
+        string="Include in Wizard",
+        help="If unchecked, this task type will not be offered in the intake wizard.",
+        default=True,
+    )
 
     # Optional SOP checklist template (simple v1: create subtasks)
     checklist_subtask_names = fields.Text(
@@ -47,6 +67,14 @@ class FsmTaskType(models.Model):
         "category_id",
         string="Preferred Product Categories",
         help="When selecting products in the intake wizard, these categories are used as initial filters.",
+    )
+    subscription_category_ids = fields.Many2many(
+        "product.category",
+        "fsm_task_type_sub_product_category_rel",
+        "task_type_id",
+        "category_id",
+        string="Subscription Product Categories",
+        help="Only subscriptions containing products in these categories will be offered in the intake wizard.",
     )
     preferred_team_ids = fields.Many2many(
         "fsm.team",

@@ -17,6 +17,12 @@
                             <field name="fsm_invoice_stage_done_name" placeholder="Done"/>
                         </setting>
                     </block>
+                    <block title="Scheduling">
+                        <setting string="Lead minutes before first slot"
+                                 help="Minutes to add after shift start before offering the first slot (0 to allow right at shift start).">
+                            <field name="fsm_slot_start_lead_minutes"/>
+                        </setting>
+                    </block>
                 </app>
             </xpath>
         </field>

@@ -47,16 +47,21 @@ class FsmTaskIntakeWizard(models.TransientModel):
     _description = "FSM Guided Task Intake Wizard"
 
     state = fields.Selection([
-        ("type", "Type"),
         ("customer", "Customer"),
+        ("type", "Type"),
         ("products", "Products"),
         ("schedule", "Schedule"),
         ("notes", "Notes"),
         ("confirm", "Confirm"),
-    ], default="type", required=True)
+    ], default="customer", required=True)
 
     # Step 1
-    task_type_id = fields.Many2one("fsm.task.type", string="What are we doing?", required=True)
+    task_type_id = fields.Many2one(
+        "fsm.task.type",
+        string="What are we doing?",
+        domain="[('id', 'in', available_task_type_ids)]",
+    )
+    never_has_product = fields.Boolean(related="task_type_id.never_has_product", readonly=True)
 
     # Step 2
     partner_id = fields.Many2one("res.partner", string="Customer")
@@ -64,8 +69,20 @@ class FsmTaskIntakeWizard(models.TransientModel):
     subscription_id = fields.Many2one(
         "sale.order",
         string="Subscription",
-        domain="[('partner_id', '=', partner_id)]",
         help="Active subscription for the selected customer."
+    )
+    available_subscription_ids = fields.Many2many(
+        "sale.order",
+        compute="_compute_available_orders",
+        string="Available Subscriptions",
+        readonly=True,
+    )
+    subscription_category_ids = fields.Many2many(related="task_type_id.subscription_category_ids", readonly=True)
+    available_task_type_ids = fields.Many2many(
+        "fsm.task.type",
+        compute="_compute_available_task_types",
+        string="Available Task Types",
+        readonly=True,
     )
     show_service_address = fields.Boolean(compute="_compute_service_address_visibility")
     service_address_id = fields.Many2one(
@@ -79,8 +96,13 @@ class FsmTaskIntakeWizard(models.TransientModel):
     sale_order_id = fields.Many2one(
         "sale.order",
         string="Existing Sales Order",
-        domain="[('partner_id', '=', partner_id)]",
         help="Select an existing sales order to reuse for this task."
+    )
+    available_sale_order_ids = fields.Many2many(
+        "sale.order",
+        compute="_compute_available_orders",
+        string="Available Sales Orders",
+        readonly=True,
     )
     has_existing_sales_orders = fields.Boolean(
         compute="_compute_has_existing_sales_orders",
@@ -92,6 +114,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
     require_signature = fields.Boolean(related="task_type_id.requires_signature", readonly=True)
     require_photos = fields.Boolean(related="task_type_id.requires_photos", readonly=True)
     product_category_ids = fields.Many2many(related="task_type_id.product_category_ids", readonly=True)
+    subscription_category_ids = fields.Many2many(related="task_type_id.subscription_category_ids", readonly=True)
     preferred_team_ids = fields.Many2many(
         "fsm.team",
         compute="_compute_preferred_and_capable_teams",
@@ -119,25 +142,31 @@ class FsmTaskIntakeWizard(models.TransientModel):
         readonly=True,
     )
     slot_index = fields.Integer(default=0)
-    slot1_label = fields.Char(compute="_compute_slots")
-    slot2_label = fields.Char(compute="_compute_slots")
-    slot3_label = fields.Char(compute="_compute_slots")
-    slot1_start = fields.Datetime(compute="_compute_slots")
-    slot2_start = fields.Datetime(compute="_compute_slots")
-    slot3_start = fields.Datetime(compute="_compute_slots")
-    slot1_end = fields.Datetime(compute="_compute_slots")
-    slot2_end = fields.Datetime(compute="_compute_slots")
-    slot3_end = fields.Datetime(compute="_compute_slots")
-    slot1_team_id = fields.Many2one("fsm.team", compute="_compute_slots", readonly=True)
-    slot2_team_id = fields.Many2one("fsm.team", compute="_compute_slots", readonly=True)
-    slot3_team_id = fields.Many2one("fsm.team", compute="_compute_slots", readonly=True)
-    slot1_team_label = fields.Char(compute="_compute_slots", readonly=True)
-    slot2_team_label = fields.Char(compute="_compute_slots", readonly=True)
-    slot3_team_label = fields.Char(compute="_compute_slots", readonly=True)
-    slot1_is_preferred = fields.Boolean(compute="_compute_slots", readonly=True)
-    slot2_is_preferred = fields.Boolean(compute="_compute_slots", readonly=True)
-    slot3_is_preferred = fields.Boolean(compute="_compute_slots", readonly=True)
+    slot1_label = fields.Char(compute="_compute_slots", store=True)
+    slot2_label = fields.Char(compute="_compute_slots", store=True)
+    slot3_label = fields.Char(compute="_compute_slots", store=True)
+    slot1_start = fields.Datetime(compute="_compute_slots", store=True)
+    slot2_start = fields.Datetime(compute="_compute_slots", store=True)
+    slot3_start = fields.Datetime(compute="_compute_slots", store=True)
+    slot1_end = fields.Datetime(compute="_compute_slots", store=True)
+    slot2_end = fields.Datetime(compute="_compute_slots", store=True)
+    slot3_end = fields.Datetime(compute="_compute_slots", store=True)
+    slot1_team_id = fields.Many2one("fsm.team", compute="_compute_slots", readonly=True, store=True)
+    slot2_team_id = fields.Many2one("fsm.team", compute="_compute_slots", readonly=True, store=True)
+    slot3_team_id = fields.Many2one("fsm.team", compute="_compute_slots", readonly=True, store=True)
+    slot1_team_label = fields.Char(compute="_compute_slots", readonly=True, store=True)
+    slot2_team_label = fields.Char(compute="_compute_slots", readonly=True, store=True)
+    slot3_team_label = fields.Char(compute="_compute_slots", readonly=True, store=True)
+    slot1_is_preferred = fields.Boolean(compute="_compute_slots", readonly=True, store=True)
+    slot2_is_preferred = fields.Boolean(compute="_compute_slots", readonly=True, store=True)
+    slot3_is_preferred = fields.Boolean(compute="_compute_slots", readonly=True, store=True)
     search_start_dt = fields.Datetime(string="Slot Search Start", readonly=False)
+    filter_use_date = fields.Boolean(string="Filter by Date")
+    date_filter_start = fields.Date(string="Earliest Date")
+    date_filter_end = fields.Date(string="Latest Date")
+    filter_use_time = fields.Boolean(string="Filter by Time")
+    time_filter_start = fields.Float(string="Earliest Time", help="Use HH:MM format", digits=(16, 2))
+    time_filter_end = fields.Float(string="Latest Time", help="Use HH:MM format", digits=(16, 2))
 
     selected_slot = fields.Selection(
         selection="_get_slot_selection",
@@ -178,8 +207,8 @@ class FsmTaskIntakeWizard(models.TransientModel):
     def _get_state_title(self):
         self.ensure_one()
         titles = {
-            "type": _("Select Activity"),
             "customer": _("Select Customer"),
+            "type": _("Select Activity"),
             "products": _("Select Products"),
             "schedule": _("Select Date/Time"),
             "notes": _("Enter Notes"),
@@ -193,8 +222,6 @@ class FsmTaskIntakeWizard(models.TransientModel):
 
     def _get_slot_label_map(self):
         self.ensure_one()
-        # Ensure slot labels are up to date before sharing them with the UI context
-        self._compute_slots()
         return {
             "1": self.slot1_label or _("No available slot"),
             "2": self.slot2_label or _("No available slot"),
@@ -204,11 +231,11 @@ class FsmTaskIntakeWizard(models.TransientModel):
     @api.model
     def _get_slot_selection(self):
         labels = self.env.context.get("slot_labels") or {
-            "1": _("Slot 1"),
-            "2": _("Slot 2"),
-            "3": _("Slot 3"),
+            "1": _("Option 1"),
+            "2": _("Option 2"),
+            "3": _("Option 3"),
         }
-        return [(key, labels.get(key) or _("Slot %s") % key) for key in ["1", "2", "3"]]
+        return [(key, labels.get(key) or _("Option %s") % key) for key in ["1", "2", "3"]]
 
     @api.onchange("partner_id")
     def _onchange_partner(self):
@@ -233,13 +260,44 @@ class FsmTaskIntakeWizard(models.TransientModel):
     def _compute_has_existing_sales_orders(self):
         """Check if the customer has any existing sales orders"""
         for wiz in self:
+            wiz.has_existing_sales_orders = bool(wiz.available_sale_order_ids)
+
+    @api.depends("subscription_id", "partner_id")
+    def _compute_available_task_types(self):
+        for wiz in self:
+            task_types = self.env["fsm.task.type"].search([])
+            # If a customer or subscription is selected, only show client tasks
+            if wiz.partner_id or wiz.subscription_id:
+                task_types = task_types.filtered(lambda tt: tt.is_client_task)
+            if wiz.subscription_id:
+                sub_categs = wiz.subscription_id.order_line.mapped("product_id.categ_id")
+                sub_categ_ids = set(sub_categs.ids)
+                allowed_ids = []
+                for tt in task_types:
+                    if not tt.subscription_category_ids:
+                        allowed_ids.append(tt.id)
+                        continue
+                    type_categ_ids = set(tt.subscription_category_ids.ids)
+                    if sub_categ_ids & type_categ_ids:
+                        allowed_ids.append(tt.id)
+                task_types = task_types.browse(allowed_ids)
+            wiz.available_task_type_ids = task_types
+
+    @api.depends("partner_id", "subscription_category_ids")
+    def _compute_available_orders(self):
+        for wiz in self:
+            subs = self.env["sale.order"]
+            sales = self.env["sale.order"]
             if wiz.partner_id:
-                count = self.env["sale.order"].search_count([
-                    ("partner_id", "=", wiz.partner_id.id)
-                ])
-                wiz.has_existing_sales_orders = count > 0
-            else:
-                wiz.has_existing_sales_orders = False
+                domain_base = [("partner_id", "=", wiz.partner_id.id)]
+                if wiz.subscription_category_ids:
+                    domain = domain_base + [("order_line.product_id.categ_id", "child_of", wiz.subscription_category_ids.ids)]
+                else:
+                    domain = domain_base
+                subs = self.env["sale.order"].search(domain)
+                sales = subs
+            wiz.available_subscription_ids = subs
+            wiz.available_sale_order_ids = sales
 
     @api.depends("partner_id", "service_address_id", "line_ids", "planned_hours", "task_type_id", "sale_order_id")
     def _compute_warnings(self):
@@ -276,12 +334,16 @@ class FsmTaskIntakeWizard(models.TransientModel):
         if self.task_type_id and not self.task_type_id.project_id:
             errors.append(_("Task type must have a project assigned."))
         if self.task_type_id and self.task_type_id.requires_products:
-            project = self.task_type_id.project_id
-            if project and hasattr(project, "allow_materials") and not project.allow_materials:
-                errors.append(_("Project '%s' must allow materials when products are required.") % project.display_name)
+            if self.never_has_product:
+                # Explicitly allow skipping products when configured
+                pass
+            else:
+                project = self.task_type_id.project_id
+                if project and hasattr(project, "allow_materials") and not project.allow_materials:
+                    errors.append(_("Project '%s' must allow materials when products are required.") % project.display_name)
         if (self.planned_hours or 0.0) == 0.0:
             errors.append(_("Planned hours cannot be 0."))
-        if self.task_type_id and self.task_type_id.requires_products:
+        if self.task_type_id and self.task_type_id.requires_products and not self.never_has_product:
             if not self.sale_order_id and not self.line_ids:
                 errors.append(_("This task type requires products. Please select a Sales Order or add products."))
         if self.task_type_id and self.task_type_id.requires_serials:
@@ -351,7 +413,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
         hours = self.task_type_id.default_planned_hours if self.task_type_id else self.planned_hours
         return max(hours or 0.0, 1.0)
 
-    def _find_top_slots(self, start_dt, limit=3):
+    def _find_top_slots(self, start_dt, limit=3, date_end=None, time_start=None, time_end=None):
         """
         Return a list of top available slots sorted by start time.
         Each slot is a dict: {"start": datetime, "end": datetime, "team": fsm.team}.
@@ -369,7 +431,11 @@ class FsmTaskIntakeWizard(models.TransientModel):
 
         slots = []
         # Scan a few days ahead
-        search_end = start_dt + timedelta(days=14)
+        search_end = date_end or (start_dt + timedelta(days=14))
+        # Convert search window to UTC to match stored booking datetimes
+        search_start_utc = self._to_utc(start_dt)
+        search_end_utc = self._to_utc(search_end)
+        lead_minutes = int(self.env["ir.config_parameter"].sudo().get_param("fsm_guided_intake.slot_start_lead_minutes", "0") or 0)
 
         # Precompute team sets per lead to check lead availability across teams
         lead_to_team_ids = {}
@@ -397,21 +463,54 @@ class FsmTaskIntakeWizard(models.TransientModel):
             existing_bookings = self.env["fsm.booking"].search([
                 ("team_id", "in", team_ids_for_lead),
                 ("state", "!=", "cancelled"),
-                ("start_datetime", "<", search_end),
-                ("end_datetime", ">", start_dt),
+                ("start_datetime", "<", search_end_utc),
+                ("end_datetime", ">", search_start_utc),
             ])
+            # Also consider tasks with planned dates for this team (if any)
+            task_intervals = []
+            Task = self.env["project.task"]
+            if "team_id" in Task._fields:
+                task_domain = [("team_id", "in", team_ids_for_lead), ("stage_id.fold", "=", False)]
+                if "planned_date_begin" in Task._fields and "planned_date_end" in Task._fields:
+                    task_domain += [
+                        ("planned_date_begin", "<", search_end_utc),
+                        ("planned_date_end", ">", search_start_utc),
+                    ]
+                elif "date_start" in Task._fields and "date_end" in Task._fields:
+                    task_domain += [
+                        ("date_start", "<", search_end_utc),
+                        ("date_end", ">", search_start_utc),
+                    ]
+                tasks = Task.search(task_domain)
+                for t in tasks:
+                    start = getattr(t, "planned_date_begin", False) or getattr(t, "date_start", False)
+                    end = getattr(t, "planned_date_end", False) or getattr(t, "date_end", False)
+                    if start and end:
+                        task_intervals.append((start, end))
             # Loop through days
             current_day = start_dt.date()
             while datetime.combine(current_day, time.min) < search_end:
+                if self.filter_use_date and self.date_filter_start and current_day < self.date_filter_start:
+                    current_day += timedelta(days=1)
+                    continue
+                if self.filter_use_date and self.date_filter_end and current_day > self.date_filter_end:
+                    break
                 weekday_str = str(current_day.weekday())
                 day_attendances = attendances.filtered(lambda a: a.dayofweek == weekday_str)
                 if day_attendances:
                     earliest = min(day_attendances.mapped("hour_from"))
                     latest = max(day_attendances.mapped("hour_to"))
 
-                    start_hour, start_min = float_hours_to_hm(earliest)
-                    end_hour, end_min = float_hours_to_hm(latest)
-                    shift_start_dt = datetime.combine(current_day, time(start_hour, start_min)) + timedelta(minutes=30)
+                    effective_start = earliest
+                    effective_end = latest
+                    if time_start is not None:
+                        effective_start = max(effective_start, time_start)
+                    if time_end is not None:
+                        effective_end = min(effective_end, time_end)
+                    start_hour, start_min = float_hours_to_hm(effective_start)
+                    end_candidate = effective_end
+                    end_hour, end_min = float_hours_to_hm(end_candidate)
+                    shift_start_dt = datetime.combine(current_day, time(start_hour, start_min)) + timedelta(minutes=lead_minutes)
                     shift_end_dt = datetime.combine(current_day, time(end_hour, end_min)) + timedelta(hours=1)
 
                     if shift_end_dt <= shift_start_dt:
@@ -433,6 +532,11 @@ class FsmTaskIntakeWizard(models.TransientModel):
                         overlap = existing_bookings.filtered(
                             lambda b: b.start_datetime < slot_end_utc and b.end_datetime > slot_start_utc
                         )
+                        if not overlap and task_intervals:
+                            for start_dt, end_dt in task_intervals:
+                                if start_dt < slot_end_utc and end_dt > slot_start_utc:
+                                    overlap = True
+                                    break
                         if not overlap:
                             slots.append({
                                 "start": slot_start,
@@ -447,7 +551,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
         slots.sort(key=lambda s: s["start"])
         return slots[:limit]
 
-    @api.depends("task_type_id", "partner_id", "planned_hours", "slot_index")
+    @api.depends("task_type_id", "partner_id", "planned_hours", "slot_index", "search_start_dt", "date_filter_start", "date_filter_end", "time_filter_start", "time_filter_end", "filter_use_date", "filter_use_time")
     def _compute_slots(self):
         for wiz in self:
             wiz.slot1_label = False
@@ -475,6 +579,9 @@ class FsmTaskIntakeWizard(models.TransientModel):
                 continue
 
             start_dt = wiz.search_start_dt or (fields.Datetime.now() + timedelta(minutes=15))
+            if wiz.filter_use_date and wiz.date_filter_start:
+                start_dt = datetime.combine(wiz.date_filter_start, time.min)
+            search_end = datetime.combine(wiz.date_filter_end, time.max) if (wiz.filter_use_date and wiz.date_filter_end) else None
             # Scan forward in 2-hour increments (up to ~7 days) until we find slots.
             slots = []
             chosen_start = start_dt
@@ -482,14 +589,39 @@ class FsmTaskIntakeWizard(models.TransientModel):
             for attempt in range(max_attempts):
                 start_dt_attempt = start_dt + timedelta(hours=attempt * 2.0)
                 start_dt_attempt = wiz._round_to_nearest_10(start_dt_attempt)
-                slots = wiz._find_top_slots(start_dt_attempt, limit=3)
+                slots = wiz._find_top_slots(
+                    start_dt_attempt,
+                    limit=3,
+                    date_end=search_end,
+                    time_start=wiz.time_filter_start if wiz.filter_use_time else None,
+                    time_end=wiz.time_filter_end if wiz.filter_use_time else None,
+                )
+                # Deduplicate slots (team + time) to avoid repeated identical options
+                uniq = []
+                seen = set()
+                for s in slots:
+                    key = (s["team"].id if s["team"] else False, s["start"], s["end"])
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    uniq.append(s)
+                slots = uniq
                 if slots:
                     chosen_start = start_dt_attempt
                     break
             # remember the start used; next run will bump from the last shown window
             wiz.search_start_dt = chosen_start
 
-            # If still nothing, leave defaults; downstream will keep empties.
+            # Deduplicate slots again before display to avoid identical entries
+            uniq_slots = []
+            seen_keys = set()
+            for s in slots:
+                key = (s["team"].id if s.get("team") else False, s.get("start"), s.get("end"))
+                if key in seen_keys:
+                    continue
+                seen_keys.add(key)
+                uniq_slots.append(s)
+            slots = uniq_slots
 
             # Format labels with proper datetime display
             if len(slots) > 0:
@@ -533,13 +665,19 @@ class FsmTaskIntakeWizard(models.TransientModel):
     # Navigation
     def action_next(self):
         self.ensure_one()
-        order = ["type","customer","products","schedule","notes","confirm"]
+        order = ["customer","type","products","schedule","notes","confirm"]
         idx = order.index(self.state)
         if self.state == "confirm":
             return {"type": "ir.actions.act_window_close"}
         if self.state == "customer" and not self.partner_id:
             raise UserError(_("Please select a customer before continuing."))
-        self.state = order[min(idx+1, len(order)-1)]
+        if self.state == "type" and not self.task_type_id:
+            raise UserError(_("Please select an activity before continuing."))
+        # Skip products step when task type never has products
+        if self.state == "type" and self.never_has_product:
+            self.state = "schedule"
+        else:
+            self.state = order[min(idx+1, len(order)-1)]
         return {
             "type": "ir.actions.act_window",
             "res_model": "fsm.task.intake.wizard",
@@ -552,9 +690,12 @@ class FsmTaskIntakeWizard(models.TransientModel):
 
     def action_back(self):
         self.ensure_one()
-        order = ["type","customer","products","schedule","notes","confirm"]
+        order = ["customer","type","products","schedule","notes","confirm"]
         idx = order.index(self.state)
-        self.state = order[max(idx-1, 0)]
+        if self.state == "schedule" and self.never_has_product:
+            self.state = "type"
+        else:
+            self.state = order[max(idx-1, 0)]
         return {
             "type": "ir.actions.act_window",
             "res_model": "fsm.task.intake.wizard",
@@ -669,12 +810,18 @@ class FsmTaskIntakeWizard(models.TransientModel):
                 task_vals["date_deadline"] = False
         if "planned_hours" in self.env["project.task"]._fields:
             task_vals["planned_hours"] = duration_hours
+            # Pass through default planned hours for comparison
+            task_vals["fsm_default_planned_hours"] = duration_hours
         if self.sale_order_id and "sale_order_id" in task_fields:
             task_vals["sale_order_id"] = self.sale_order_id.id
         if self.task_type_id.default_stage_id:
             task_vals["stage_id"] = self.task_type_id.default_stage_id.id
         try:
-            task = self.env["project.task"].create(task_vals)
+            # Remove wizard-specific context keys that can collide with project.task defaults
+            create_ctx = dict(self.env.context)
+            create_ctx.pop("default_state", None)
+            create_ctx.pop("state", None)
+            task = self.env["project.task"].with_context(create_ctx).create(task_vals)
         except Exception as e:
             raise UserError(_("Task creation failed: %s\nDebug payload: %s") % (e, debug_payload))
 
@@ -702,7 +849,10 @@ class FsmTaskIntakeWizard(models.TransientModel):
         # Booking
         alloc_hours = (end_dt - start_dt).total_seconds() / 3600.0
         try:
-            booking = self.env["fsm.booking"].create({
+            clean_ctx = dict(self.env.context)
+            clean_ctx.pop("default_state", None)
+            clean_ctx.pop("state", None)
+            booking = self.env["fsm.booking"].with_context(clean_ctx).create({
                 "task_id": task.id,
                 "team_id": team.id,
                 "start_datetime": start_dt_utc,
@@ -713,7 +863,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
             task.fsm_booking_id = booking.id
 
             # Create delivery + reserve (as requested)
-            booking.action_create_or_update_delivery()
+            booking.with_context(clean_ctx).action_create_or_update_delivery()
         except Exception as e:
             raise UserError(_("Booking creation failed: %s\nDebug payload: %s") % (e, debug_payload))
 

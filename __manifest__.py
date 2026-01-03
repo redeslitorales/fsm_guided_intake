@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 {
-    "name": "FSM Guided Intake",
+    "name": "Cabal FSM Customizations",
     "version": "17.0.1.2.2",
     "category": "Services/Field Service",
     "summary": "Guided task intake wizard with task types, team capacity scheduling, and stock reservation on scheduling.",
@@ -13,6 +13,7 @@
         "views/fsm_booking_views.xml",
         "wizard/fsm_task_intake_wizard_views.xml",
         "views/project_task_views.xml",
+        "views/sale_order_views.xml",
         "views/res_config_settings_views.xml",
         "views/product_views.xml",
         "data/ir_cron.xml",

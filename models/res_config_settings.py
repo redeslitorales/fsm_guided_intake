@@ -15,3 +15,9 @@ class ResConfigSettings(models.TransientModel):
         default="Done",
         help="When a task's stage name matches this value (case-insensitive), the system will prepare the Sales Order and create a draft invoice.",
     )
+    fsm_slot_start_lead_minutes = fields.Integer(
+        string="Slot Start Lead Minutes",
+        config_parameter="fsm_guided_intake.slot_start_lead_minutes",
+        default=0,
+        help="Minutes to add after shift start before the first slot can begin.",
+    )

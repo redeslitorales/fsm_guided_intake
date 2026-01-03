@@ -33,6 +33,17 @@ class ProjectTask(models.Model):
     fsm_material_ids = fields.One2many("fsm.task.material", "task_id", string="Materials/Services", copy=False)
     fsm_invoiced = fields.Boolean(string="FSM Invoiced", default=False, copy=False)
     fsm_last_invoiced_so_id = fields.Many2one("sale.order", string="Last Invoiced SO", copy=False)
+    fsm_default_planned_hours = fields.Float(string="Default Planned Hours (Type)", copy=False)
+    fsm_planned_hours_warning = fields.Boolean(
+        string="Planned Hours Mismatch",
+        compute="_compute_planned_hours_warning",
+        store=True,
+    )
+    fsm_planned_hours_warning_text = fields.Char(
+        string="Planned Hours Warning",
+        compute="_compute_planned_hours_warning",
+        store=True,
+    )
     # quick helper: mark done button to create invoice later (v1: just creates SO if absent)
     # Fiber install worksheet (minimal field set)
     fsm_install_type = fields.Selection(
@@ -123,6 +134,35 @@ class ProjectTask(models.Model):
                 cat6_ok,
             ]
             task.fsm_install_complete = all(required)
+
+    @api.depends("fsm_default_planned_hours")
+    def _compute_planned_hours_warning(self):
+        for task in self:
+            warn = False
+            text = False
+            planned = task.planned_hours if "planned_hours" in task._fields else False
+            if task.fsm_default_planned_hours and planned:
+                if abs(planned - task.fsm_default_planned_hours) > 0.01:
+                    warn = True
+                    text = _("Planned hours differ from task type default: %s (planned) vs %s (default).") % (
+                        planned,
+                        task.fsm_default_planned_hours,
+                    )
+            task.fsm_planned_hours_warning = warn
+            task.fsm_planned_hours_warning_text = text
+
+    @api.model
+    def create(self, vals):
+        tasks = super().create(vals)
+        if "planned_hours" in vals or "fsm_default_planned_hours" in vals:
+            tasks._compute_planned_hours_warning()
+        return tasks
+
+    def write(self, vals):
+        res = super().write(vals)
+        if "planned_hours" in vals or "fsm_default_planned_hours" in vals:
+            self._compute_planned_hours_warning()
+        return res
 
     def action_fsm_prepare_invoice(self):
         """V1: Create/Update a Sales Order linked to the task partner with task materials.

@@ -38,9 +38,9 @@
                         <field name="picking_id"/>
                     </group>
                     <footer>
-                        <button name="action_create_or_update_delivery" type="object" string="Create/Reserve Delivery" class="btn-primary"
+                        <button name="action_create_or_update_delivery" type="object" string="Create/Reserve Delivery" translate="True" class="btn-primary"
                                 invisible='state != "confirmed"'/>
-                        <button name="action_cancel" type="object" string="Cancel Booking" class="btn-secondary"
+                        <button name="action_cancel" type="object" string="Cancel Booking" translate="True" class="btn-secondary"
                                 invisible='state == "cancelled"'/>
 
                     </footer>
