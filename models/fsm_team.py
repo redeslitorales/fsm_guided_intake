@@ -7,7 +7,17 @@ class FsmTeam(models.Model):
     _description = "FSM Team"
     _order = "name"
 
-    name = fields.Char(required=True)
+    name = fields.Char(compute="_compute_name", store=True, required=True)
+
+    @api.depends('lead_user_id')
+    def _compute_name(self):
+        for rec in self:
+            if rec.lead_user_id:
+                rec.name = _('Team Leader: %s') % (rec.lead_user_id.name or '')
+            else:
+                # fallback to original name if needed (could use an extra field if you want editable base name)
+                rec.name = _('Team (no leader)')
+# ...existing code...
     active = fields.Boolean(default=True)
 
     member_ids = fields.Many2many("hr.employee", string="Technicians")

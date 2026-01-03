@@ -42,9 +42,19 @@ class FsmTaskIntakeWizardLine(models.TransientModel):
         for rec in self:
             rec.is_service = rec.product_id and rec.product_id.type == "service"
 
+
+
 class FsmTaskIntakeWizard(models.TransientModel):
     _name = "fsm.task.intake.wizard"
     _description = "FSM Guided Task Intake Wizard"
+
+
+    @api.onchange('team_id')
+    def _onchange_team_id(self):
+        """When the team filter is changed, recompute available slots and qualified teams."""
+        # Force recompute of qualified teams and slots
+        self._compute_qualified_teams()
+        self._compute_slots()
 
     state = fields.Selection([
         ("customer", "Customer"),
@@ -425,7 +435,11 @@ class FsmTaskIntakeWizard(models.TransientModel):
         buffer_before = timedelta(minutes=(self.buffer_before_mins or 0))
         buffer_after = timedelta(minutes=(self.buffer_after_mins or 0))
 
-        teams = self.qualified_team_ids
+        # If a team is selected, only use that team for slot search
+        if self.team_id:
+            teams = self.team_id
+        else:
+            teams = self.qualified_team_ids
         if not teams:
             teams = self.env["fsm.team"].search([("active", "=", True)])
 
@@ -537,12 +551,31 @@ class FsmTaskIntakeWizard(models.TransientModel):
                                 if start_dt < slot_end_utc and end_dt > slot_start_utc:
                                     overlap = True
                                     break
-                        if not overlap:
-                            slots.append({
-                                "start": slot_start,
-                                "end": slot_end,
-                                "team": team,
-                            })
+
+                        # Filter: Only show slots in the future for today (timezone aware, force UTC-6 if unset)
+                        import pytz
+                        tz_name = self.env.context.get("tz") or self.env.user.tz or "America/El_Salvador"
+                        tz = pytz.timezone(tz_name)
+                        now_utc = fields.Datetime.now()
+                        slot_start_utc = slot_start if slot_start.tzinfo else slot_start.replace(tzinfo=None)
+                        now_tz = pytz.UTC.localize(now_utc).astimezone(tz)
+                        slot_start_tz = pytz.UTC.localize(slot_start_utc).astimezone(tz)
+                        # If slot is today, allow if slot is at or after now (>=)
+                        if slot_start_tz.date() == now_tz.date():
+                            if slot_start_tz >= now_tz:
+                                if not overlap:
+                                    slots.append({
+                                        "start": slot_start,
+                                        "end": slot_end,
+                                        "team": team,
+                                    })
+                        else:
+                            if not overlap:
+                                slots.append({
+                                    "start": slot_start,
+                                    "end": slot_end,
+                                    "team": team,
+                                })
                         cursor += step
 
                 current_day += timedelta(days=1)

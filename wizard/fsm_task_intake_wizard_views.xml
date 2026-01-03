@@ -87,7 +87,7 @@
                             <field name="qualified_team_ids" invisible="1"/>
                         </group>
 
-                        <group string="Available Time Slots" col="1" class="o_colspan_2">
+                        <group col="1" class="o_colspan_2" string="Available Time Slots">
                             <field name="slot_index" invisible="1"/>
                             <field name="slot1_label" invisible="1"/>
                             <field name="slot2_label" invisible="1"/>
