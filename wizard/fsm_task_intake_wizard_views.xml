@@ -87,7 +87,7 @@
                             <field name="qualified_team_ids" invisible="1"/>
                         </group>
 
-                        <group string="Available Time Slots" col="2" class="o_colspan_2">
+                        <group string="Available Time Slots" col="1" class="o_colspan_2">
                             <field name="slot_index" invisible="1"/>
                             <field name="slot1_label" invisible="1"/>
                             <field name="slot2_label" invisible="1"/>
@@ -105,53 +105,32 @@
                             <field name="slot2_is_preferred" invisible="1"/>
                             <field name="slot3_is_preferred" invisible="1"/>
 
-                            <field name="selected_slot" widget="radio" class="o_colspan_2" nolabel="1" colspan="2"
-                                   options="{'horizontal': false}"/>
+                            <div class="o_colspan_2" style="white-space: nowrap;">
+                                <field name="selected_slot" widget="radio" nolabel="1"
+                                       options="{'horizontal': false}"/>
+                            </div>
 
-                            <div class="o_row o_colspan_2">
-                                <div class="col-12">
-                                    <div class="alert alert-success w-100" style="max-width: 640px;" role="alert" invisible="not slot1_label or not slot1_is_preferred">
-                                        <strong>Option 1:</strong>
-                                        <span class="badge badge-success" invisible="not slot1_team_label">
-                                            <field name="slot1_team_label" readonly="1" nolabel="1"/>
-                                        </span>
-                                        <field name="slot1_label" readonly="1" nolabel="1" class="ms-1"/>
-                                    </div>
-                                    <div class="alert alert-warning w-100" style="max-width: 640px;" role="alert" invisible="not slot1_label or slot1_is_preferred">
-                                        <strong>Option 1:</strong>
-                                        <span class="badge badge-warning" invisible="not slot1_team_label">
-                                            <field name="slot1_team_label" readonly="1" nolabel="1"/>
-                                        </span>
-                                        <field name="slot1_label" readonly="1" nolabel="1" class="ms-1"/>
-                                    </div>
-                                    <div class="alert alert-success w-100" style="max-width: 640px;" role="alert" invisible="not slot2_label or not slot2_is_preferred">
-                                        <strong>Option 2:</strong>
-                                        <span class="badge badge-success" invisible="not slot2_team_label">
-                                            <field name="slot2_team_label" readonly="1" nolabel="1"/>
-                                        </span>
-                                        <field name="slot2_label" readonly="1" nolabel="1" class="ms-1"/>
-                                    </div>
-                                    <div class="alert alert-warning w-100" style="max-width: 640px;" role="alert" invisible="not slot2_label or slot2_is_preferred">
-                                        <strong>Option 2:</strong>
-                                        <span class="badge badge-warning" invisible="not slot2_team_label">
-                                            <field name="slot2_team_label" readonly="1" nolabel="1"/>
-                                        </span>
-                                        <field name="slot2_label" readonly="1" nolabel="1" class="ms-1"/>
-                                    </div>
-                                    <div class="alert alert-success w-100" style="max-width: 640px;" role="alert" invisible="not slot3_label or not slot3_is_preferred">
-                                        <strong>Option 3:</strong>
-                                        <span class="badge badge-success" invisible="not slot3_team_label">
-                                            <field name="slot3_team_label" readonly="1" nolabel="1"/>
-                                        </span>
-                                        <field name="slot3_label" readonly="1" nolabel="1" class="ms-1"/>
-                                    </div>
-                                    <div class="alert alert-warning w-100" style="max-width: 640px;" role="alert" invisible="not slot3_label or slot3_is_preferred">
-                                        <strong>Option 3:</strong>
-                                        <span class="badge badge-warning" invisible="not slot3_team_label">
-                                            <field name="slot3_team_label" readonly="1" nolabel="1"/>
-                                        </span>
-                                        <field name="slot3_label" readonly="1" nolabel="1" class="ms-1"/>
-                                    </div>
+                            <div class="o_colspan_2" style="margin-top: 0.5rem;">
+                                <div class="alert alert-success w-100" role="alert" invisible="not slot1_label" style="width: 100%; max-width: none;">
+                                    <strong>Option 1:</strong>
+                                    <span class="badge badge-success" invisible="not slot1_team_label">
+                                        <field name="slot1_team_label" readonly="1" nolabel="1"/>
+                                    </span>
+                                    <field name="slot1_label" readonly="1" nolabel="1" class="ms-1"/>
+                                </div>
+                                <div class="alert alert-success w-100" role="alert" invisible="not slot2_label" style="width: 100%; max-width: none;">
+                                    <strong>Option 2:</strong>
+                                    <span class="badge badge-success" invisible="not slot2_team_label">
+                                        <field name="slot2_team_label" readonly="1" nolabel="1"/>
+                                    </span>
+                                    <field name="slot2_label" readonly="1" nolabel="1" class="ms-1"/>
+                                </div>
+                                <div class="alert alert-success w-100" role="alert" invisible="not slot3_label" style="width: 100%; max-width: none;">
+                                    <strong>Option 3:</strong>
+                                    <span class="badge badge-success" invisible="not slot3_team_label">
+                                        <field name="slot3_team_label" readonly="1" nolabel="1"/>
+                                    </span>
+                                    <field name="slot3_label" readonly="1" nolabel="1" class="ms-1"/>
                                 </div>
                             </div>
 
