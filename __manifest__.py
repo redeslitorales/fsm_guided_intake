@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Cabal FSM Customizations",
-    "version": "17.0.1.3.2",
+    "version": "17.0.1.4.0",
     "category": "Services/Field Service",
     "summary": "Guided task intake wizard with task types, team capacity scheduling, and stock reservation on scheduling.",
     "depends": ["project", "industry_fsm", "stock", "sale_management", "fleet", "sale", "iptv_management"],
