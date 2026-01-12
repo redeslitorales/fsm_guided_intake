@@ -52,6 +52,7 @@
                         <field name="include_in_wizard"/>
                         <field name="is_client_task"/>
                         <field name="requires_fiber_install"/>
+                        <field name="requires_iptv_install"/>
                         <field name="product_category_ids" widget="many2many_tags"/>
                         <field name="subscription_category_ids" widget="many2many_tags"/>
                     </group>

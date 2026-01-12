@@ -57,6 +57,18 @@ class ProjectTask(models.Model):
         store=True,
         readonly=True,
     )
+    fsm_requires_iptv_install = fields.Boolean(
+        string="Requires IPTV Install",
+        related="fsm_task_type_id.requires_iptv_install",
+        store=True,
+        readonly=True,
+    )
+    fsm_task_type_enforce_validation = fields.Boolean(
+        string="Task Type Enforces Install Validation",
+        related="fsm_task_type_id.enforce_install_validation",
+        store=True,
+        readonly=True,
+    )
     fsm_pon_type = fields.Selection(
         [("gpon", "GPON"), ("xgspon", "XGS-PON")],
         string="PON Type",
@@ -80,6 +92,36 @@ class ProjectTask(models.Model):
         string="Install Worksheet Complete",
         compute="_compute_fsm_install_complete",
         store=True,
+    )
+    
+    # IPTV related fields from sale_order_id
+    iptv_service_id = fields.Integer(
+        string='IPTV Service ID',
+        related='sale_order_id.iptv_service_id',
+        readonly=True,
+        store=False
+    )
+    iptv_status = fields.Selection(
+        related='sale_order_id.iptv_status',
+        readonly=True,
+        store=False
+    )
+    iptv_stb_ids = fields.One2many(
+        'iptv.stb',
+        'order_id',
+        string='STBs',
+        related='sale_order_id.iptv_stb_ids',
+        readonly=False
+    )
+    iptv_max_sessions = fields.Integer(
+        related='sale_order_id.iptv_max_sessions',
+        readonly=True,
+        store=False
+    )
+    iptv_can_add_stb = fields.Boolean(
+        related='sale_order_id.iptv_can_add_stb',
+        readonly=True,
+        store=False
     )
 
     def _fsm_create_draft_invoice(self):
@@ -231,3 +273,17 @@ class ProjectTask(models.Model):
         The actual WhatsApp sending may be provided by a separate integration module.
         """
         return True
+    
+    def action_activate_iptv_from_task(self):
+        """Activate IPTV service from the task"""
+        self.ensure_one()
+        if not self.sale_order_id:
+            raise ValidationError(_("No subscription found for this task."))
+        return self.sale_order_id.action_activate_iptv()
+    
+    def action_refresh_iptv_from_subscription(self):
+        """Refresh IPTV data from the subscription"""
+        self.ensure_one()
+        if not self.sale_order_id:
+            raise ValidationError(_("No subscription found for this task."))
+        return {'type': 'ir.actions.client', 'tag': 'reload'}

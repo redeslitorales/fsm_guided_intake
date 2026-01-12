@@ -22,10 +22,11 @@
                         <field name="available_subscription_ids" invisible="1"/>
                         <field name="available_sale_order_ids" invisible="1"/>
                         <field name="available_task_type_ids" invisible="1"/>
+                        <field name="reschedule_task_id" invisible="1"/>
                     </group>
 
                     <!-- Step 1: Customer -->
-                    <group invisible="state != 'customer'" col="1" class="o_colspan_2">
+                    <group invisible="state != 'customer' or reschedule_task_id" col="1" class="o_colspan_2">
                         <field name="partner_id" colspan="2" class="o_colspan_2"
                                options="{'no_create': True, 'no_open': True, 'no_create_edit': True, 'no_quick_create': True}"/>
                         <field name="subscription_id" colspan="2" class="o_colspan_2"
@@ -38,14 +39,14 @@
                     </group>
 
                     <!-- Step 2: Type -->
-                    <group invisible="state != 'type'" col="1" class="o_colspan_2">
+                    <group invisible="state != 'type' or reschedule_task_id" col="1" class="o_colspan_2">
                         <field name="task_type_id" colspan="2" class="o_colspan_2"
                                domain="[('id', 'in', available_task_type_ids)]"
                                options="{'no_create': True, 'no_open': True, 'no_create_edit': True, 'no_quick_create': True}"/>
                     </group>
 
                     <!-- Step 3: Products -->
-                    <group invisible="state != 'products' or never_has_product" col="1" class="o_colspan_2">
+                    <group invisible="state != 'products' or never_has_product or reschedule_task_id" col="1" class="o_colspan_2">
                         <!-- Only show sales order field if customer has existing orders -->
                         <div invisible="has_existing_sales_orders" class="o_colspan_2" colspan="2">
                             <div class="alert alert-info w-100" role="alert">

@@ -25,6 +25,31 @@
         <!-- Fall back to base project task form to avoid missing xmlid in some builds -->
         <field name="inherit_id" ref="project.view_task_form2"/>
         <field name="arch" type="xml">
+            <!-- Add Activate Internet button to header -->
+            <xpath expr="//form/header" position="inside">
+                <field name="fsm_requires_fiber_install" invisible="1"/>
+                <field name="fsm_requires_iptv_install" invisible="1"/>
+                <button name="%(fsm_guided_intake.action_fsm_task_intake_wizard)d"
+                    type="action"
+                    string="Change Appointment"
+                    icon="fa-calendar"
+                    class="btn btn-warning"
+                    context="{'active_model': 'project.task', 'active_id': active_id, 'reschedule_task_id': active_id, 'state': 'schedule'}"/>
+                <button name="%(cpe_assets.activation_wizard_entry)d"
+                        type="action"
+                        string="Activate Internet"
+                        icon="fa-globe"
+                        class="btn btn-primary"
+                        invisible="not fsm_requires_fiber_install"
+                        context="{'active_model': 'project.task', 'active_ids': [active_id], 'from_task': True}"/>
+                <button name="action_activate_iptv_from_task"
+                        type="object"
+                        string="Activate IPTV"
+                        icon="fa-tv"
+                        class="btn btn-primary"
+                        invisible="not fsm_requires_iptv_install"/>
+            </xpath>
+            
             <xpath expr="//sheet" position="inside">
                 <field name="fsm_planned_hours_warning" invisible="1"/>
                 <field name="fsm_default_planned_hours" invisible="1"/>
@@ -84,6 +109,67 @@
                     <group>
                         <field name="fsm_install_complete" readonly="1"/>
                     </group>
+                </page>
+                
+                <!-- Cabal TV page for IPTV install tasks -->
+                <page name="iptv_task_page" string="Cabal TV" 
+                      invisible="not fsm_requires_iptv_install">
+                  
+                  <group string="Subscription Service">
+                    <field name="sale_order_id" readonly="1"/>
+                    <field name="iptv_service_id" readonly="1"/>
+                    <field name="iptv_status" readonly="1"/>
+                  </group>
+                  
+                  <group string="Actions">
+                    <button name="action_refresh_iptv_from_subscription"
+                            string="Refresh from Subscription"
+                            type="object"
+                            class="oe_highlight"
+                            icon="fa-refresh"/>
+                  </group>
+                  
+                  <group string="STBs">
+                    <field name="iptv_max_sessions" readonly="1"/>
+                    <field name="iptv_can_add_stb" invisible="1"/>
+
+                    <!-- Editable STB list -->
+                    <field name="iptv_stb_ids"
+                          context="{'default_order_id': sale_order_id}"
+                          mode="tree,form"
+                          invisible="not iptv_can_add_stb">
+                      <tree editable="bottom" delete="1">
+                        <field name="mac"/>
+                        <field name="status"/>
+                        <field name="backend_stb_id" readonly="1"/>
+                        <field name="last_connection" readonly="1"/>
+                        <field name="notes"/>
+                      </tree>
+                      <form>
+                        <group>
+                          <field name="mac"/>
+                          <field name="status"/>
+                          <field name="backend_stb_id" readonly="1"/>
+                          <field name="last_connection" readonly="1"/>
+                          <field name="notes"/>
+                        </group>
+                      </form>
+                    </field>
+
+                    <!-- Read-only STB list (max sessions reached) -->
+                    <field name="iptv_stb_ids"
+                          context="{'default_order_id': sale_order_id}"
+                          mode="tree,form"
+                          invisible="iptv_can_add_stb">
+                      <tree editable="bottom" create="0" delete="1">
+                        <field name="mac"/>
+                        <field name="status"/>
+                        <field name="backend_stb_id" readonly="1"/>
+                        <field name="last_connection" readonly="1"/>
+                        <field name="notes"/>
+                      </tree>
+                    </field>
+                  </group>
                 </page>
             </xpath>
         </field>

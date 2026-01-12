@@ -48,6 +48,14 @@ class FsmTaskIntakeWizard(models.TransientModel):
     _name = "fsm.task.intake.wizard"
     _description = "FSM Guided Task Intake Wizard"
 
+    reschedule_task_id = fields.Many2one("project.task", string="Task to Reschedule", readonly=True)
+
+    def _get_default_state(self):
+        if self.env.context.get("state"):
+            return self.env.context.get("state")
+        if self.env.context.get("reschedule_task_id"):
+            return "schedule"
+        return "customer"
 
     @api.onchange('team_id')
     def _onchange_team_id(self):
@@ -63,7 +71,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
         ("schedule", "Schedule"),
         ("notes", "Notes"),
         ("confirm", "Confirm"),
-    ], default="customer", required=True)
+    ], default=_get_default_state, required=True)
 
     # Step 1
     task_type_id = fields.Many2one(
@@ -224,10 +232,14 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "notes": _("Enter Notes"),
             "confirm": _("Confirm Appointment"),
         }
+        if self._is_reschedule_mode():
+            return {"schedule": _("Select Date/Time"), "notes": _("Enter Notes"), "confirm": _("Confirm Changes")}.get(self.state, "")
         return titles.get(self.state, "")
 
     def _get_wizard_title(self):
         self.ensure_one()
+        if self._is_reschedule_mode():
+            return _("Reschedule Field Service Task - %s") % (self._get_state_title() or "")
         return _("Create Field Service Task - %s") % (self._get_state_title() or "")
 
     def _get_slot_label_map(self):
@@ -238,6 +250,12 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "3": self.slot3_label or _("No available slot"),
         }
 
+    def _is_reschedule_mode(self):
+        return bool(self.reschedule_task_id or self.env.context.get("reschedule_task_id"))
+
+    def _get_step_order(self):
+        return ["schedule", "notes", "confirm"] if self._is_reschedule_mode() else ["customer", "type", "products", "schedule", "notes", "confirm"]
+
     @api.model
     def _get_slot_selection(self):
         labels = self.env.context.get("slot_labels") or {
@@ -246,6 +264,26 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "3": _("Option 3"),
         }
         return [(key, labels.get(key) or _("Option %s") % key) for key in ["1", "2", "3"]]
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        task_id = self.env.context.get("reschedule_task_id")
+        if task_id:
+            task = self.env["project.task"].browse(task_id)
+            if task:
+                res["reschedule_task_id"] = task.id
+                res["state"] = "schedule"
+                res["partner_id"] = task.partner_id.id or False
+                res["subscription_id"] = task.sale_order_id.id if "sale_order_id" in task._fields else False
+                res["service_address_id"] = task.fsm_service_address_id.id if "fsm_service_address_id" in task._fields else False
+                res["task_type_id"] = task.fsm_task_type_id.id if "fsm_task_type_id" in task._fields else False
+                res["planned_hours"] = (task.planned_hours if "planned_hours" in task._fields else False) or task.fsm_default_planned_hours or 1.0
+                res["search_start_dt"] = task.planned_date_begin or fields.Datetime.now()
+                # Do not prefill team on reschedule; keep all qualified teams available
+                res["team_id"] = False
+                res["selected_slot"] = "1"
+        return res
 
     @api.onchange("partner_id")
     def _onchange_partner(self):
@@ -434,10 +472,11 @@ class FsmTaskIntakeWizard(models.TransientModel):
         needed_hours = self._get_duration_hours()
         buffer_before = timedelta(minutes=(self.buffer_before_mins or 0))
         buffer_after = timedelta(minutes=(self.buffer_after_mins or 0))
+        reschedule_task_id = self.reschedule_task_id.id or self.env.context.get("reschedule_task_id")
 
-        # If a team is selected, only use that team for slot search
+        # If a team is selected, prioritize it but still include all qualified teams
         if self.team_id:
-            teams = self.team_id
+            teams = self.team_id | self.qualified_team_ids
         else:
             teams = self.qualified_team_ids
         if not teams:
@@ -474,17 +513,22 @@ class FsmTaskIntakeWizard(models.TransientModel):
                 continue
             # Preload existing bookings for the window to avoid overlaps
             team_ids_for_lead = lead_to_team_ids.get(team.lead_user_id.id, [team.id])
-            existing_bookings = self.env["fsm.booking"].search([
+            booking_domain = [
                 ("team_id", "in", team_ids_for_lead),
                 ("state", "!=", "cancelled"),
                 ("start_datetime", "<", search_end_utc),
                 ("end_datetime", ">", search_start_utc),
-            ])
+            ]
+            if reschedule_task_id:
+                booking_domain.append(("task_id", "!=", reschedule_task_id))
+            existing_bookings = self.env["fsm.booking"].search(booking_domain)
             # Also consider tasks with planned dates for this team (if any)
             task_intervals = []
             Task = self.env["project.task"]
             if "team_id" in Task._fields:
                 task_domain = [("team_id", "in", team_ids_for_lead), ("stage_id.fold", "=", False)]
+                if reschedule_task_id:
+                    task_domain.append(("id", "!=", reschedule_task_id))
                 if "planned_date_begin" in Task._fields and "planned_date_end" in Task._fields:
                     task_domain += [
                         ("planned_date_begin", "<", search_end_utc),
@@ -557,9 +601,12 @@ class FsmTaskIntakeWizard(models.TransientModel):
                         tz_name = self.env.context.get("tz") or self.env.user.tz or "America/El_Salvador"
                         tz = pytz.timezone(tz_name)
                         now_utc = fields.Datetime.now()
-                        slot_start_utc = slot_start if slot_start.tzinfo else slot_start.replace(tzinfo=None)
                         now_tz = pytz.UTC.localize(now_utc).astimezone(tz)
-                        slot_start_tz = pytz.UTC.localize(slot_start_utc).astimezone(tz)
+                        # Treat slot_start as local time (naive means local); avoid double-shifting by UTC
+                        if slot_start.tzinfo:
+                            slot_start_tz = slot_start.astimezone(tz)
+                        else:
+                            slot_start_tz = tz.localize(slot_start)
                         # If slot is today, allow if slot is at or after now (>=)
                         if slot_start_tz.date() == now_tz.date():
                             if slot_start_tz >= now_tz:
@@ -698,18 +745,22 @@ class FsmTaskIntakeWizard(models.TransientModel):
     # Navigation
     def action_next(self):
         self.ensure_one()
-        order = ["customer","type","products","schedule","notes","confirm"]
+        order = self._get_step_order()
         idx = order.index(self.state)
         if self.state == "confirm":
             return {"type": "ir.actions.act_window_close"}
-        if self.state == "customer" and not self.partner_id:
-            raise UserError(_("Please select a customer before continuing."))
-        if self.state == "type" and not self.task_type_id:
-            raise UserError(_("Please select an activity before continuing."))
-        # Skip products step when task type never has products
-        if self.state == "type" and self.never_has_product:
-            self.state = "schedule"
+        if not self._is_reschedule_mode():
+            if self.state == "customer" and not self.partner_id:
+                raise UserError(_("Please select a customer before continuing."))
+            if self.state == "type" and not self.task_type_id:
+                raise UserError(_("Please select an activity before continuing."))
+            if self.state == "type" and self.never_has_product:
+                self.state = "schedule"
+            else:
+                self.state = order[min(idx+1, len(order)-1)]
         else:
+            if self.state == "schedule" and not (self.slot1_start or self.slot2_start or self.slot3_start):
+                raise UserError(_("No available appointment slots were found."))
             self.state = order[min(idx+1, len(order)-1)]
         return {
             "type": "ir.actions.act_window",
@@ -723,12 +774,15 @@ class FsmTaskIntakeWizard(models.TransientModel):
 
     def action_back(self):
         self.ensure_one()
-        order = ["customer","type","products","schedule","notes","confirm"]
+        order = self._get_step_order()
         idx = order.index(self.state)
-        if self.state == "schedule" and self.never_has_product:
-            self.state = "type"
-        else:
+        if self._is_reschedule_mode():
             self.state = order[max(idx-1, 0)]
+        else:
+            if self.state == "schedule" and self.never_has_product:
+                self.state = "type"
+            else:
+                self.state = order[max(idx-1, 0)]
         return {
             "type": "ir.actions.act_window",
             "res_model": "fsm.task.intake.wizard",
@@ -756,6 +810,8 @@ class FsmTaskIntakeWizard(models.TransientModel):
 
     def action_create_task(self):
         self.ensure_one()
+        if self._is_reschedule_mode():
+            return self._action_reschedule_task()
         errors = self._preflight_errors()
         if errors:
             raise UserError(_("Fix these issues before saving:\n- %s") % "\n- ".join(errors))
@@ -908,6 +964,122 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "res_id": task.id,
         }
 
+    def _action_reschedule_task(self):
+        self.ensure_one()
+        task = self.reschedule_task_id or self.env["project.task"].browse(self.env.context.get("reschedule_task_id"))
+        if not task:
+            raise UserError(_("No task to reschedule was provided."))
+
+        slot_map = {
+            "1": (self.slot1_start, self.slot1_end, self.slot1_team_id),
+            "2": (self.slot2_start, self.slot2_end, self.slot2_team_id),
+            "3": (self.slot3_start, self.slot3_end, self.slot3_team_id),
+        }
+        start_dt, end_dt, slot_team = slot_map.get(self.selected_slot, (self.slot1_start, self.slot1_end, self.slot1_team_id))
+        if not start_dt or not end_dt:
+            raise UserError(_("Please pick an available appointment slot."))
+
+        duration_hours = self._get_duration_hours()
+        end_dt = start_dt + timedelta(hours=duration_hours)
+
+        team = slot_team or self.team_id
+        if not team and getattr(task, "fsm_booking_id", False):
+            team = task.fsm_booking_id.team_id
+        if not team:
+            team = self.env["fsm.team"].search([], limit=1)
+        if not team:
+            raise UserError(_("No FSM team found for scheduling."))
+
+        start_dt_utc = self._to_utc(start_dt)
+        end_dt_utc = self._to_utc(end_dt)
+
+        update_vals = {
+            "planned_date_begin": start_dt_utc,
+        }
+        if "planned_date_end" in task._fields:
+            update_vals["planned_date_end"] = end_dt_utc
+        if "planned_hours" in task._fields:
+            update_vals["planned_hours"] = duration_hours
+
+        assignee_user_ids = []
+        if team:
+            if team.lead_user_id:
+                assignee_user_ids.append(team.lead_user_id.id)
+            member_users = team.member_ids.mapped("user_id").filtered(lambda u: u)
+            assignee_user_ids += member_users.ids
+        elif "user_ids" in task._fields and task.user_ids:
+            # Fallback: keep current assignees only when no team was provided
+            assignee_user_ids = task.user_ids.ids
+        if assignee_user_ids and "user_ids" in task._fields:
+            update_vals["user_ids"] = [(6, 0, list(dict.fromkeys(assignee_user_ids)))]
+
+        if self.notes:
+            current_description = task.description or ""
+            timestamp = fields.Datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            note_header = f"\n\n=== Appointment Rescheduled ({timestamp}) ===\n"
+            new_note = f"{note_header}{self.notes}\n"
+            update_vals["description"] = current_description + new_note
+
+        old_start = task.planned_date_begin.strftime("%Y-%m-%d %H:%M") if getattr(task, "planned_date_begin", False) else "Not set"
+        new_start = start_dt.strftime("%Y-%m-%d %H:%M")
+
+        message_body = f"""
+        <p><strong>Appointment Rescheduled</strong></p>
+        <ul>
+            <li><strong>Previous Start:</strong> {old_start}</li>
+            <li><strong>New Start:</strong> {new_start}</li>
+        """
+
+        if assignee_user_ids:
+            names = ", ".join(self.env["res.users"].browse(assignee_user_ids).mapped("name"))
+            message_body += f"<li><strong>Assigned To:</strong> {names}</li>"
+
+        if team:
+            message_body += f"<li><strong>Team:</strong> {team.display_name}</li>"
+
+        if self.notes:
+            message_body += f"<li><strong>Reason:</strong> {self.notes}</li>"
+
+        message_body += "</ul>"
+
+        try:
+            task.write(update_vals)
+            booking = getattr(task, "fsm_booking_id", False)
+            if booking:
+                booking.write({
+                    "team_id": team.id,
+                    "start_datetime": start_dt_utc,
+                    "end_datetime": end_dt_utc,
+                    "allocated_hours": duration_hours,
+                    "state": "confirmed",
+                })
+            else:
+                booking = self.env["fsm.booking"].create({
+                    "task_id": task.id,
+                    "team_id": team.id,
+                    "start_datetime": start_dt_utc,
+                    "end_datetime": end_dt_utc,
+                    "allocated_hours": duration_hours,
+                    "state": "confirmed",
+                })
+                task.fsm_booking_id = booking.id
+
+            task.message_post(body=message_body, subject="Appointment Rescheduled")
+        except Exception as e:
+            raise UserError(_("Failed to update task: %s") % e)
+
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": _("Appointment Updated"),
+                "message": _("The appointment has been rescheduled."),
+                "type": "success",
+                "sticky": False,
+                "next": {"type": "ir.actions.act_window_close"},
+            },
+        }
+
     @api.model
     def fields_view_get(self, view_id=None, view_type="form", toolbar=False, submenu=False):
         """
@@ -927,3 +1099,4 @@ class FsmTaskIntakeWizard(models.TransientModel):
         selection = [(key, labels.get(key) or _("No available slot")) for key in ["1", "2", "3"]]
         res["fields"]["selected_slot"]["selection"] = selection
         return res
+

@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20231127\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-03 01:16+0000\n"
-"PO-Revision-Date: 2026-01-02 19:17-0600\n"
+"POT-Creation-Date: 2026-01-12 04:05+0000\n"
+"PO-Revision-Date: 2026-01-11 22:12-0600\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -19,10 +19,21 @@ msgstr ""
 
 #. module: fsm_guided_intake
 #. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
 #: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
 #, python-format
 msgid "%s, %s - %s"
 msgstr "%s, %s - %s"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid "<i class=\"fa fa-calendar-o\"/> Rescheduling Appointment"
+msgstr "<i class=\"fa fa-calendar-o\"/>  Reprogramación de la cita"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid "<i class=\"fa fa-check-circle\"/> Review Changes"
+msgstr "<i class=\"fa fa-check-circle\"/>Cambios en la reseña"
 
 #. module: fsm_guided_intake
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
@@ -59,6 +70,36 @@ msgstr ""
 "o una orden de venta."
 
 #. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid ""
+"<i class=\"fa fa-exclamation-triangle\"/> <strong>Important:</strong> After "
+"confirming, you will need to manually update the end time if the "
+"automatically calculated time is not correct."
+msgstr ""
+"<i class=\"fa fa-exclamation-triangle\"/> <strong>Importante:</strong> Tras "
+"confirmarlo, tendrás que actualizar manualmente la hora de finalización si la "
+"hora calculada automáticamente no es correcta."
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid ""
+"<i class=\"fa fa-info-circle\"/> <strong>Note:</strong> End time uses the "
+"task duration. It will be updated automatically when you pick a slot."
+msgstr ""
+"<i class=\"fa fa-info-circle\"/><strong>Nota:</strong> La hora final utiliza "
+"la duración de la tarea. Se actualizará automáticamente cuando elijas una "
+"ranura."
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid ""
+"<i class=\"fa fa-info-circle\"/> This note will be added to the task "
+"description and logged in the task's activity history."
+msgstr ""
+"<i class=\"fa fa-info-circle\"/> Esta nota se añadirá a la descripción de la "
+"tarea y se registrará en el historial de actividades de la tarea."
+
+#. module: fsm_guided_intake
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
 msgid "<i class=\"fa fa-warning\"/> Customer phone number is missing."
 msgstr "<i class=\"fa fa-warning\"/> El número de teléfono del cliente falta."
@@ -69,24 +110,52 @@ msgid "<i class=\"fa fa-warning\"/> Service address is not specified."
 msgstr "<i class=\"fa fa-warning\"/> No se especifica la dirección de servicio."
 
 #. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid "<strong>Customer:</strong>"
+msgstr "<strong>Cliente:</strong>"
+
+#. module: fsm_guided_intake
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
 msgid "<strong>No existing sales orders found</strong>"
 msgstr "<strong>No se han encontrado pedidos de venta existentes</strong>"
 
 #. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
 msgid "<strong>Option 1:</strong>"
 msgstr "<strong>Opción 1:</strong>"
 
 #. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
 msgid "<strong>Option 2:</strong>"
 msgstr "<strong>Opción 2:</strong>"
 
 #. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
 msgid "<strong>Option 3:</strong>"
 msgstr "<strong>Opción 3:</strong>"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid "<strong>Task:</strong>"
+msgstr "<strong>Tarea:</strong>"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_project_task_form_fiber_install
+msgid "Actions"
+msgstr "Acciones"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_project_task_form_fiber_install
+msgid "Activate IPTV"
+msgstr "Activar IPTV"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_project_task_form_fiber_install
+msgid "Activate Internet"
+msgstr "Activar Internet"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__active
@@ -105,6 +174,34 @@ msgid "Allocated Hours"
 msgstr "Horas asignadas"
 
 #. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid "Appointment Changes"
+msgstr "Cambios en los nombramientos"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Appointment Updated"
+msgstr "Nombramiento actualizado"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid "Assign Technicians (Optional)"
+msgstr "Asignar Técnicos (Opcional)"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__user_ids
+msgid "Assign To"
+msgstr "Asignar a"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid "Assignees"
+msgstr "Cesionarios"
+
+#. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__fsm_authenticated
 msgid "Authenticated"
 msgstr "Autenticado"
@@ -116,6 +213,15 @@ msgid "Auto-create invoice draft when task reaches Done stage"
 msgstr ""
 "Crear automáticamente borrador de factura cuando la tarea llega a la fase de "
 "Finalizada"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_change_appointment_wizard__planned_date_end
+msgid ""
+"Automatically calculated based on task's planned hours. You will be reminded "
+"to adjust this manually after saving."
+msgstr ""
+"Calculado automáticamente en función de las horas planificadas de la tarea. "
+"Se te recordará que ajustes esto manualmente después de guardar."
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__available_sale_order_ids
@@ -133,11 +239,13 @@ msgid "Available Task Types"
 msgstr "Tipos de tareas disponibles"
 
 #. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
 msgid "Available Time Slots"
 msgstr "Franjas horarias disponibles"
 
 #. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
 msgid "Back"
 msgstr "Volver"
@@ -150,6 +258,7 @@ msgstr "Proyecto de ley de la Tarea de Servicio de Campo"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,help:fsm_guided_intake.field_fsm_task_type__enforce_install_validation
+#: model:ir.model.fields,help:fsm_guided_intake.field_project_task__fsm_task_type_enforce_validation
 msgid ""
 "Block closing tasks unless install worksheet is complete and optical levels "
 "are in range."
@@ -180,16 +289,28 @@ msgid "Bookings"
 msgstr "Reservas"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__buffer_after_mins
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__buffer_after_mins
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__buffer_after_mins
 msgid "Buffer After (min)"
 msgstr "Buffer después (min)"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__buffer_before_mins
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__buffer_before_mins
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__buffer_before_mins
 msgid "Buffer Before (min)"
 msgstr "Búfer antes (min)"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_project_task_form_fiber_install
+msgid "Cabal TV"
+msgstr "Cabal TV"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid "Cancel"
+msgstr "Cancelar"
 
 #. module: fsm_guided_intake
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_fsm_booking_form
@@ -229,6 +350,7 @@ msgid "Capable Task Types"
 msgstr "Tipos de tareas capaces"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__capable_only_team_ids
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__capable_only_team_ids
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__capable_team_ids
 msgid "Capable Teams"
@@ -255,6 +377,42 @@ msgid "Cat6 Notes"
 msgstr "Notas Cat6"
 
 #. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
+#: model:ir.actions.act_window,name:fsm_guided_intake.action_fsm_change_appointment_wizard
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_project_task_form_fiber_install
+#, python-format
+msgid "Change Appointment"
+msgstr "Cambio de cita"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
+#, python-format
+msgid "Change Appointment - Add Notes"
+msgstr "Cambio de cita - Añadir notas"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
+#, python-format
+msgid "Change Appointment - Confirm Changes"
+msgstr "Cambio de cita - Confirmar cambios"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
+#, python-format
+msgid "Change Appointment - Select Date/Time"
+msgstr "Cambiar de cita - Seleccionar fecha/hora"
+
+#. module: fsm_guided_intake
+#: model:ir.model,name:fsm_guided_intake.model_fsm_change_appointment_wizard
+msgid "Change FSM Task Appointment"
+msgstr "Cambiar el nombramiento de tareas FSM"
+
+#. module: fsm_guided_intake
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_fsm_task_type_form
 msgid "Checklist"
 msgstr "Checklist"
@@ -265,6 +423,7 @@ msgid "Checklist Items (one per line)"
 msgstr "Elementos de la lista de comprobación (uno por línea)"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__selected_slot
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__selected_slot
 msgid "Choose Appointment"
 msgstr "Elegir Nombramiento"
@@ -290,6 +449,7 @@ msgid "Config Settings"
 msgstr "Ajustes de configuración"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_change_appointment_wizard__state__confirm
 #: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_task_intake_wizard__state__confirm
 msgid "Confirm"
 msgstr "Confirmar"
@@ -300,6 +460,14 @@ msgstr "Confirmar"
 #, python-format
 msgid "Confirm Appointment"
 msgstr "Confirma reserva"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+#, python-format
+msgid "Confirm Changes"
+msgstr "Confirmar cambios"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_booking__state__confirmed
@@ -341,6 +509,7 @@ msgstr "Entrega/Creación/Reserva"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__create_uid
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__create_uid
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__create_uid
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__create_uid
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__create_uid
@@ -352,6 +521,7 @@ msgstr "Creado por"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__create_date
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__create_date
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__create_date
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__create_date
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__create_date
@@ -362,6 +532,28 @@ msgid "Created on"
 msgstr "Creado el"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__current_user_ids
+msgid "Current Assignees"
+msgstr "Asignados actuales"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid "Current Schedule"
+msgstr "Calendario actual"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__current_planned_date_begin
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid "Current Start Time"
+msgstr "Hora de inicio actual"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid "Currently Assigned"
+msgstr "Actualmente asignados"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__partner_id
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__partner_id
 #: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_task_intake_wizard__state__customer
 msgid "Customer"
@@ -426,6 +618,7 @@ msgstr "Orden de entrega"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__display_name
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__display_name
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__display_name
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__display_name
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__display_name
@@ -445,6 +638,24 @@ msgstr "Hecho"
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_res_config_settings_fsm_guided_intake
 msgid "Done Stage Name"
 msgstr "Nombre artístico de Done"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__planned_hours
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid "Duration (Hours)"
+msgstr "Duración (Horas)"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__date_filter_start
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__date_filter_start
+msgid "Earliest Date"
+msgstr "Fecha más temprana"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__time_filter_start
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__time_filter_start
+msgid "Earliest Time"
+msgstr "Época más antigua"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__end_datetime
@@ -479,9 +690,29 @@ msgid "Enter any internal notes or special instructions..."
 msgstr "Introduce cualquier nota interna o instrucciones especiales..."
 
 #. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid ""
+"Enter the reason for rescheduling this appointment (e.g., 'Customer requested "
+"different time', 'Technician unavailable', 'Weather delay', etc.)..."
+msgstr ""
+"Introduce el motivo para reprogramar esta cita (por ejemplo, 'El cliente "
+"solicitó una hora diferente', 'Técnico no disponible', 'Retraso por el "
+"tiempo', etc.)..."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_change_appointment_wizard__planned_hours
+msgid "Estimated duration in hours"
+msgstr "Duración estimada en horas"
+
+#. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__sale_order_id
 msgid "Existing Sales Order"
 msgstr "Pedido de venta existente"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_change_appointment_wizard__notes
+msgid "Explain why the appointment is being rescheduled"
+msgstr "Explica por qué se está reprogramando la cita"
 
 #. module: fsm_guided_intake
 #: model:ir.actions.server,name:fsm_guided_intake.ir_cron_fsm_auto_invoice_done_tasks_ir_actions_server
@@ -544,14 +775,41 @@ msgid "FSM Team Shift"
 msgstr "Cambio de equipo FSM"
 
 #. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Failed to update task: %s"
+msgstr "No se ha podido actualizar la tarea: %s"
+
+#. module: fsm_guided_intake
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_project_task_form_fiber_install
 msgid "Fiber Install"
 msgstr "Instalación de fibra"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__filter_use_date
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__filter_use_date
+msgid "Filter by Date"
+msgstr "Filtrar por Fecha"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
 msgid "Filter by Team (Optional)"
 msgstr "Filtrar por equipo (opcional)"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__filter_use_time
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__filter_use_time
+msgid "Filter by Time"
+msgstr "Filtrar por tiempo"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
+msgid "Filters"
+msgstr "Filtros"
 
 #. module: fsm_guided_intake
 #. odoo-python
@@ -592,6 +850,7 @@ msgstr "Hora en formato 24h. Ejemplo: 8,5 para 08:30"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__id
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__id
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__id
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__id
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__id
@@ -602,6 +861,21 @@ msgid "ID"
 msgstr "ID"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__iptv_max_sessions
+msgid "IPTV Max Sessions"
+msgstr "Sesiones máximas de IPTV"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__iptv_service_id
+msgid "IPTV Service ID"
+msgstr "ID de servicio IPTV"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__iptv_status
+msgid "IPTV Status"
+msgstr "Estado de IPTV"
+
+#. module: fsm_guided_intake
 #: model:ir.model.fields,help:fsm_guided_intake.field_product_product__fsm_bill_from_task
 #: model:ir.model.fields,help:fsm_guided_intake.field_product_template__fsm_bill_from_task
 msgid ""
@@ -610,6 +884,17 @@ msgid ""
 msgstr ""
 "Si está habilitado, este producto se añadirá a las Órdenes de Venta/Facturas "
 "generadas por tareas de servicio de campo."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_task_type__include_in_wizard
+msgid "If unchecked, this task type will not be offered in the intake wizard."
+msgstr ""
+"Si no se marca, este tipo de tarea no se ofrecerá en el asistente de admisión."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__include_in_wizard
+msgid "Include in Wizard"
+msgstr "Incluir en Wizard"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,help:fsm_guided_intake.field_fsm_task_type__may_be_rescheduled
@@ -643,6 +928,11 @@ msgid "Invoicing"
 msgstr "Facturación"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__iptv_can_add_stb
+msgid "Iptv Can Add Stb"
+msgstr "Iptv puede agregar stb"
+
+#. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__is_service
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__is_service
 msgid "Is Service"
@@ -655,6 +945,7 @@ msgstr "Última pareja facturada"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__write_uid
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__write_uid
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__write_uid
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__write_uid
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__write_uid
@@ -666,6 +957,7 @@ msgstr "Actualizado por"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__write_date
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__write_date
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__write_date
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__write_date
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__write_date
@@ -676,15 +968,41 @@ msgid "Last Updated on"
 msgstr "Actualizado el"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__date_filter_end
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__date_filter_end
+msgid "Latest Date"
+msgstr "Ultima fecha"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__time_filter_end
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__time_filter_end
+msgid "Latest Time"
+msgstr "Última vez"
+
+#. module: fsm_guided_intake
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_res_config_settings_fsm_guided_intake
 msgid "Lead minutes before first slot"
 msgstr "Minutos de apertura antes del primer slot"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid "Leave empty to keep current assignees"
+msgstr "Deja vacío para mantener a los asignados actuales"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__fsm_material_ids
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_project_task_form_fiber_install
 msgid "Materials/Services"
 msgstr "Materiales/Servicios"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_project_task__iptv_max_sessions
+msgid ""
+"Maximum number of STBs allowed on this subscription. Loaded from the "
+"product's IPTV profile but managers can override."
+msgstr ""
+"Número máximo de STB permitidos en esta suscripción. Se carga desde el perfil "
+"de IPTV del producto, pero los administradores pueden anular."
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__may_be_rescheduled
@@ -737,14 +1055,34 @@ msgid "New"
 msgstr "Nuevo"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__planned_date_end
+msgid "New End Time (Estimated)"
+msgstr "Nuevo Tiempo Final (Estimado)"
+
+#. module: fsm_guided_intake
 #: model:ir.model.fields.selection,name:fsm_guided_intake.selection__project_task__fsm_install_type__new
 msgid "New Install"
 msgstr "Nueva instalación"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__planned_date_begin
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid "New Start Time"
+msgstr "Hora de nuevo inicio"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
 msgid "Next"
 msgstr "Siguiente"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "No FSM team found for scheduling."
+msgstr "No se encontró ningún equipo de FSM para programar."
 
 #. module: fsm_guided_intake
 #. odoo-python
@@ -755,6 +1093,14 @@ msgstr "No se encontró ningún equipo FSM."
 
 #. module: fsm_guided_intake
 #. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "No available appointment slots were found."
+msgstr "No se encontraron citas disponibles."
+
+#. module: fsm_guided_intake
+#. odoo-python
 #: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
 #, python-format
 msgid "No available schedule slot found."
@@ -762,6 +1108,7 @@ msgstr "No se ha encontrado ninguna franja disponible en el horario."
 
 #. module: fsm_guided_intake
 #. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
 #: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
 #, python-format
 msgid "No available slot"
@@ -775,7 +1122,30 @@ msgid "No outgoing picking type found."
 msgstr "No se encontró ningún tipo de selección saliente."
 
 #. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/project_task.py:0
+#, python-format
+msgid "No subscription found for this task."
+msgstr "No se ha encontrado ninguna suscripción para esta tarea."
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
+#, python-format
+msgid "No task found to update."
+msgstr "No se ha encontrado ninguna tarea para actualizar."
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "No task to reschedule was provided."
+msgstr "No se asignó ninguna tarea para reprogramar."
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_change_appointment_wizard__state__notes
 #: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_task_intake_wizard__state__notes
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
 msgid "Notes"
 msgstr "Notas"
 
@@ -818,6 +1188,43 @@ msgstr "Niveles ópticos"
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__fsm_optics_in_spec
 msgid "Optical Levels In Spec"
 msgstr "Niveles ópticos en especulación"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Option %s"
+msgstr "Opción %s"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Option 1"
+msgstr "Opción 1"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Option 2"
+msgstr "Opción 2"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Option 3"
+msgstr "Opción 3"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_change_appointment_wizard__team_id
+msgid "Optional team filter; slot search will prefer this team."
+msgstr "Filtro opcional por equipo; La búsqueda de slot preferirá este equipo."
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,help:fsm_guided_intake.field_fsm_task_intake_wizard__team_id
@@ -880,6 +1287,19 @@ msgstr "Las horas planificadas deben ser >= 0."
 
 #. module: fsm_guided_intake
 #. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Please pick an available appointment slot."
+msgstr "Por favor, elige una cita disponible."
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid "Please review the changes below before confirming."
+msgstr "Por favor, revisa los cambios a continuación antes de confirmarlo."
+
+#. module: fsm_guided_intake
+#. odoo-python
 #: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
 #, python-format
 msgid "Please select a customer before continuing."
@@ -899,10 +1319,16 @@ msgid "Preferred Product Categories"
 msgstr "Categorías de productos preferidas"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__preferred_team_ids
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__preferred_team_ids
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__preferred_team_ids
 msgid "Preferred Teams"
 msgstr "Equipos preferidos"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid "Previous Start Time"
+msgstr "Hora de inicio anterior"
 
 #. module: fsm_guided_intake
 #: model:ir.model,name:fsm_guided_intake.model_product_template
@@ -961,6 +1387,7 @@ msgstr ""
 "El proyecto '%s' debe permitir materiales cuando se requieren productos."
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__qualified_team_ids
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__qualified_team_ids
 msgid "Qualified Teams"
 msgstr "Equipos clasificados"
@@ -986,6 +1413,26 @@ msgid "RX Optical Power (dBm)"
 msgstr "Potencia Óptica (dBm) de la Receita"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__notes
+msgid "Reason for Change / Notes"
+msgstr "Motivo del cambio / Notas"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid "Reason for Rescheduling"
+msgstr "Motivo de la reprogramación"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid "Reassign To"
+msgstr "Reasignación a"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_project_task_form_fiber_install
+msgid "Refresh from Subscription"
+msgstr "Actualizar desde la suscripción"
+
+#. module: fsm_guided_intake
 #: model:ir.model.fields.selection,name:fsm_guided_intake.selection__project_task__fsm_install_type__reinstall
 msgid "Reinstall"
 msgstr "Reinstalar"
@@ -1005,6 +1452,12 @@ msgstr "Requisitos"
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__fsm_requires_fiber_install
 msgid "Requires Fiber Install"
 msgstr "Requiere instalación de fibra"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__requires_iptv_install
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__fsm_requires_iptv_install
+msgid "Requires IPTV Install"
+msgstr "Requiere instalación de IPTV"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__require_photos
@@ -1031,6 +1484,25 @@ msgid "Requires Signature"
 msgstr "Requiere firma"
 
 #. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Reschedule Field Service Task - %s"
+msgstr "Reprogramar la tarea de servicio de campo - %s"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__iptv_stb_ids
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_project_task_form_fiber_install
+msgid "STBs"
+msgstr "STBs"
+
+#. module: fsm_guided_intake
+#: model:ir.model,name:fsm_guided_intake.model_sale_order
+msgid "Sales Order"
+msgstr "Pedido de Ventas"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_change_appointment_wizard__state__schedule
 #: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_task_intake_wizard__state__schedule
 msgid "Schedule"
 msgstr "Programar"
@@ -1068,6 +1540,11 @@ msgid "Select Date/Time"
 msgstr "Seleccionar fecha/hora"
 
 #. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
+msgid "Select New Time"
+msgstr "Selección de Nuevo Tiempo"
+
+#. module: fsm_guided_intake
 #. odoo-python
 #: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
 #, python-format
@@ -1081,9 +1558,20 @@ msgstr ""
 "Selecciona un pedido de venta existente para reutilizarlo en esta tarea."
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_change_appointment_wizard__user_ids
+msgid "Select technicians to assign to this appointment"
+msgstr "Selecciona técnicos para asignar a este nombramiento"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__selected_slot_label
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__selected_slot_label
 msgid "Selected Appointment"
 msgstr "Nombramiento seleccionado"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_change_appointment_wizard__planned_date_begin
+msgid "Selected slot start time"
+msgstr "Hora de inicio seleccionada"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__lot_id
@@ -1140,6 +1628,14 @@ msgid "Shifts"
 msgstr "Turnos"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_task_type__requires_iptv_install
+#: model:ir.model.fields,help:fsm_guided_intake.field_project_task__fsm_requires_iptv_install
+msgid "Show Cabal TV page and Activate IPTV button on tasks of this type."
+msgstr ""
+"Mostrar la página de Cabal TV y activar el botón IPTV en tareas de este tipo."
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
 msgid "Show More Times"
 msgstr "Mostrar más veces"
@@ -1174,39 +1670,13 @@ msgstr ""
 "tarea."
 
 #. module: fsm_guided_intake
-#. odoo-python
-#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
-#, python-format
-msgid "Slot %s"
-msgstr "Tragaperras %s"
-
-#. module: fsm_guided_intake
-#. odoo-python
-#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
-#, python-format
-msgid "Slot 1"
-msgstr "Opcion 1"
-
-#. module: fsm_guided_intake
-#. odoo-python
-#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
-#, python-format
-msgid "Slot 2"
-msgstr "Opcion 2"
-
-#. module: fsm_guided_intake
-#. odoo-python
-#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
-#, python-format
-msgid "Slot 3"
-msgstr "Opcion 3"
-
-#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__slot_index
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot_index
 msgid "Slot Index"
 msgstr "Índice de tragaperras"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__search_start_dt
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__search_start_dt
 msgid "Slot Search Start"
 msgstr "Inicio de la búsqueda de ranuras"
@@ -1217,91 +1687,109 @@ msgid "Slot Start Lead Minutes"
 msgstr "Minutos de inicio de la franja"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__slot1_end
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot1_end
 msgid "Slot1 End"
 msgstr "Opcion End"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__slot1_is_preferred
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot1_is_preferred
 msgid "Slot1 Is Preferred"
 msgstr "Se prefiere la ranura 1"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__slot1_label
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot1_label
 msgid "Slot1 Label"
 msgstr "Sello Slot1"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__slot1_start
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot1_start
 msgid "Slot1 Start"
 msgstr "Inicio en la ranura 1"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__slot1_team_id
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot1_team_id
 msgid "Slot1 Team"
 msgstr "Equipo Slot1"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__slot1_team_label
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot1_team_label
 msgid "Slot1 Team Label"
 msgstr "Sello de equipo Slot1"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__slot2_end
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot2_end
 msgid "Slot2 End"
 msgstr "Fin de la ranura 2"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__slot2_is_preferred
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot2_is_preferred
 msgid "Slot2 Is Preferred"
 msgstr "Se prefiere el Slot2"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__slot2_label
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot2_label
 msgid "Slot2 Label"
 msgstr "Sello Slot2"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__slot2_start
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot2_start
 msgid "Slot2 Start"
 msgstr "Inicio en la Ranura 2"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__slot2_team_id
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot2_team_id
 msgid "Slot2 Team"
 msgstr "Equipo Slot2"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__slot2_team_label
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot2_team_label
 msgid "Slot2 Team Label"
 msgstr "Etiqueta del equipo Slot2"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__slot3_end
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot3_end
 msgid "Slot3 End"
 msgstr "Slot3 End"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__slot3_is_preferred
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot3_is_preferred
 msgid "Slot3 Is Preferred"
 msgstr "Se prefiere la ranura 3"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__slot3_label
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot3_label
 msgid "Slot3 Label"
 msgstr "Sello Slot3"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__slot3_start
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot3_start
 msgid "Slot3 Start"
 msgstr "Inicio en la Ranura 3"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__slot3_team_id
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot3_team_id
 msgid "Slot3 Team"
 msgstr "Equipo Slot3"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__slot3_team_label
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__slot3_team_label
 msgid "Slot3 Team Label"
 msgstr "Sello del equipo Slot3"
@@ -1340,6 +1828,11 @@ msgid "State"
 msgstr "Estado"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__state
+msgid "Step"
+msgstr "Paso"
+
+#. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__subscription_id
 msgid "Subscription"
 msgstr "Suscripción"
@@ -1349,6 +1842,11 @@ msgstr "Suscripción"
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__subscription_category_ids
 msgid "Subscription Product Categories"
 msgstr "Categorías de productos de suscripción"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_project_task_form_fiber_install
+msgid "Subscription Service"
+msgstr "Servicio de suscripción"
 
 #. module: fsm_guided_intake
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
@@ -1378,14 +1876,25 @@ msgstr "Potencia Óptica TX (dBm)"
 #. module: fsm_guided_intake
 #: model:ir.model,name:fsm_guided_intake.model_project_task
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__task_id
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__task_id
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__task_id
 msgid "Task"
 msgstr "Tarea"
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__task_name
+msgid "Task Name"
+msgstr "Nombre de la Tarea"
+
+#. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__fsm_task_type_id
 msgid "Task Type"
 msgstr "Tipo de Tarea"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__fsm_task_type_enforce_validation
+msgid "Task Type Enforces Install Validation"
+msgstr "El tipo de tarea impone la validación de instalación"
 
 #. module: fsm_guided_intake
 #: model:ir.actions.act_window,name:fsm_guided_intake.action_fsm_task_type
@@ -1412,6 +1921,11 @@ msgid "Task has no customer; cannot create delivery order."
 msgstr "La tarea no tiene cliente; No se puede crear la orden de entrega."
 
 #. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__reschedule_task_id
+msgid "Task to Reschedule"
+msgstr "Tarea a reprogramar"
+
+#. module: fsm_guided_intake
 #. odoo-python
 #: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
 #, python-format
@@ -1427,8 +1941,10 @@ msgstr "El tipo de tarea debe tener un proyecto asignado."
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__team_id
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__team_id
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__team_id
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team_shift__team_id
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
 msgid "Team"
 msgstr "Equipo"
 
@@ -1440,9 +1956,23 @@ msgid "Team '%s' has no warehouse set."
 msgstr "El equipo '%s' no tiene un set de almacén."
 
 #. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/fsm_team.py:0
+#, python-format
+msgid "Team (no leader)"
+msgstr "Equipo (sin líder)"
+
+#. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__lead_user_id
 msgid "Team Lead"
 msgstr "Líder de equipo"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/fsm_team.py:0
+#, python-format
+msgid "Team Leader: %s"
+msgstr "Jefe de equipo: %s"
 
 #. module: fsm_guided_intake
 #: model:ir.actions.act_window,name:fsm_guided_intake.action_fsm_team
@@ -1468,6 +1998,14 @@ msgstr "Técnicos"
 #: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_booking__state__tentative
 msgid "Tentative"
 msgstr "Tentativa"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "The appointment has been rescheduled."
+msgstr "La reserva ha sido reprogramada"
 
 #. module: fsm_guided_intake
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
@@ -1517,6 +2055,14 @@ msgstr "Tipo"
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__product_uom
 msgid "Unit of Measure"
 msgstr "Unidad de medida"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_change_appointment_wizard__time_filter_end
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_change_appointment_wizard__time_filter_start
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_task_intake_wizard__time_filter_end
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_task_intake_wizard__time_filter_start
+msgid "Use HH:MM format"
+msgstr "Utiliza el formato HH:MM"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__vehicle_ids

@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Change Appointment Wizard Form View -->
+    <record id="fsm_change_appointment_wizard_form" model="ir.ui.view">
+        <field name="name">fsm.change.appointment.wizard.form</field>
+        <field name="model">fsm.change.appointment.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Change Appointment" create="0" class="o_form_nosave">
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="schedule,notes,confirm"/>
+                </header>
+                
+                <sheet>
+                    <!-- Hidden fields for reference -->
+                    <group>
+                        <field name="task_id" invisible="1"/>
+                        <field name="planned_hours" invisible="1"/>
+                        <field name="team_id" invisible="1"/>
+                        <field name="qualified_team_ids" invisible="1"/>
+                        <field name="preferred_team_ids" invisible="1"/>
+                        <field name="capable_only_team_ids" invisible="1"/>
+                        <field name="slot_index" invisible="1"/>
+                        <field name="slot1_label" invisible="1"/>
+                        <field name="slot2_label" invisible="1"/>
+                        <field name="slot3_label" invisible="1"/>
+                        <field name="slot1_start" invisible="1"/>
+                        <field name="slot2_start" invisible="1"/>
+                        <field name="slot3_start" invisible="1"/>
+                        <field name="slot1_end" invisible="1"/>
+                        <field name="slot2_end" invisible="1"/>
+                        <field name="slot3_end" invisible="1"/>
+                        <field name="slot1_team_label" invisible="1"/>
+                        <field name="slot2_team_label" invisible="1"/>
+                        <field name="slot3_team_label" invisible="1"/>
+                        <field name="slot1_is_preferred" invisible="1"/>
+                        <field name="slot2_is_preferred" invisible="1"/>
+                        <field name="slot3_is_preferred" invisible="1"/>
+                        <field name="search_start_dt" invisible="1"/>
+                        <field name="filter_use_date" invisible="1"/>
+                        <field name="date_filter_start" invisible="1"/>
+                        <field name="date_filter_end" invisible="1"/>
+                        <field name="filter_use_time" invisible="1"/>
+                        <field name="time_filter_start" invisible="1"/>
+                        <field name="time_filter_end" invisible="1"/>
+                        <field name="selected_slot_label" invisible="1"/>
+                    </group>
+
+                    <!-- Task Info Banner (visible on all steps) -->
+                    <div class="alert alert-info" role="alert">
+                        <h4><i class="fa fa-calendar-o"/> Rescheduling Appointment</h4>
+                        <p><strong>Task:</strong> <field name="task_name" readonly="1" nolabel="1" class="fw-bold"/></p>
+                        <p><strong>Customer:</strong> <field name="partner_id" readonly="1" nolabel="1" class="fw-bold"/></p>
+                    </div>
+
+                    <!-- Step 1: Schedule -->
+                    <group invisible="state != 'schedule'" col="1" class="o_colspan_2">
+                        <group string="Current Schedule" class="o_colspan_2">
+                            <field name="current_planned_date_begin" readonly="1" 
+                                   widget="datetime" 
+                                   string="Current Start Time"/>
+                            <field name="planned_hours" string="Duration (Hours)" readonly="1"/>
+                        </group>
+
+                        <separator string="Select New Time" class="o_colspan_2"/>
+
+                        <group string="Filters">
+                            <field name="filter_use_date"/>
+                            <field name="date_filter_start" invisible="not filter_use_date"/>
+                            <field name="date_filter_end" invisible="not filter_use_date"/>
+                            <field name="filter_use_time"/>
+                            <field name="time_filter_start" widget="float_time" invisible="not filter_use_time"/>
+                            <field name="time_filter_end" widget="float_time" invisible="not filter_use_time"/>
+                        </group>
+                        <group string="Filter by Team (Optional)">
+                            <field name="team_id" options="{'no_create': True, 'no_open': True}"/>
+                        </group>
+
+                        <group col="1" class="o_colspan_2" string="Available Time Slots">
+                            <div class="o_colspan_2" style="white-space: nowrap;">
+                                <field name="selected_slot" widget="radio" nolabel="1"
+                                       options="{'horizontal': false}"/>
+                            </div>
+
+                            <div class="o_colspan_2" style="margin-top: 0.5rem;">
+                                <div class="alert alert-success w-100" role="alert" invisible="not slot1_label" style="width: 100%; max-width: none;">
+                                    <strong>Option 1:</strong>
+                                    <span class="badge badge-success" invisible="not slot1_team_label">
+                                        <field name="slot1_team_label" readonly="1" nolabel="1"/>
+                                    </span>
+                                    <field name="slot1_label" readonly="1" nolabel="1" class="ms-1"/>
+                                </div>
+                                <div class="alert alert-success w-100" role="alert" invisible="not slot2_label" style="width: 100%; max-width: none;">
+                                    <strong>Option 2:</strong>
+                                    <span class="badge badge-success" invisible="not slot2_team_label">
+                                        <field name="slot2_team_label" readonly="1" nolabel="1"/>
+                                    </span>
+                                    <field name="slot2_label" readonly="1" nolabel="1" class="ms-1"/>
+                                </div>
+                                <div class="alert alert-success w-100" role="alert" invisible="not slot3_label" style="width: 100%; max-width: none;">
+                                    <strong>Option 3:</strong>
+                                    <span class="badge badge-success" invisible="not slot3_team_label">
+                                        <field name="slot3_team_label" readonly="1" nolabel="1"/>
+                                    </span>
+                                    <field name="slot3_label" readonly="1" nolabel="1" class="ms-1"/>
+                                </div>
+                            </div>
+
+                            <button name="action_more_options" string="Show More Times" translate="True"
+                                    type="object" class="btn-link"/>
+                        </group>
+
+                        <group string="Assign Technicians (Optional)" class="o_colspan_2">
+                            <field name="current_user_ids" 
+                                   widget="many2many_tags" 
+                                   string="Currently Assigned"
+                                   readonly="1"
+                                   options="{'color_field': 'color', 'no_create': True}"/>
+                            <field name="user_ids" 
+                                   widget="many2many_tags"
+                                   string="Reassign To"
+                                   placeholder="Leave empty to keep current assignees"
+                                   options="{'color_field': 'color', 'no_create': True, 'no_open': True}"/>
+                        </group>
+
+                        <div class="alert alert-warning" role="alert" style="margin-top: 1rem;">
+                            <i class="fa fa-info-circle"/> <strong>Note:</strong> End time uses the task duration. It will be updated automatically when you pick a slot.
+                        </div>
+                    </group>
+
+                    <!-- Step 2: Notes -->
+                    <group invisible="state != 'notes'" col="1" class="o_colspan_2">
+                        <group string="Reason for Rescheduling" class="o_colspan_2">
+                            <field name="notes" 
+                                   nolabel="1" 
+                                   placeholder="Enter the reason for rescheduling this appointment (e.g., 'Customer requested different time', 'Technician unavailable', 'Weather delay', etc.)..."/>
+                        </group>
+
+                        <div class="alert alert-info" role="alert">
+                            <i class="fa fa-info-circle"/> This note will be added to the task description and logged in the task's activity history.
+                        </div>
+                    </group>
+
+                    <!-- Step 3: Confirm -->
+                    <group invisible="state != 'confirm'" col="1" class="o_colspan_2">
+                        <div class="alert alert-success" role="alert">
+                            <h4><i class="fa fa-check-circle"/> Review Changes</h4>
+                            <p>Please review the changes below before confirming.</p>
+                        </div>
+
+                        <group string="Appointment Changes" class="o_colspan_2">
+                            <group>
+                                <label for="current_planned_date_begin" string="Previous Start Time"/>
+                                <div>
+                                    <field name="current_planned_date_begin" 
+                                           widget="datetime" 
+                                           readonly="1" 
+                                           nolabel="1"
+                                           class="text-decoration-line-through text-muted"/>
+                                </div>
+                            </group>
+                            <group>
+                                <label for="selected_slot" string="New Start Time"/>
+                                <div>
+                                    <field name="selected_slot_label" 
+                                           readonly="1" 
+                                           nolabel="1"
+                                           class="fw-bold text-success"/>
+                                </div>
+                            </group>
+                        </group>
+
+                        <group string="Team" class="o_colspan_2" invisible="not team_id">
+                            <field name="team_id" readonly="1" nolabel="1"/>
+                        </group>
+
+                        <group string="Assignees" class="o_colspan_2" invisible="not user_ids">
+                            <field name="user_ids" 
+                                   widget="many2many_tags" 
+                                   readonly="1"
+                                   nolabel="1"
+                                   options="{'color_field': 'color'}"/>
+                        </group>
+
+                        <group string="Notes" class="o_colspan_2" invisible="not notes">
+                            <field name="notes" readonly="1" nolabel="1"/>
+                        </group>
+
+                        <div class="alert alert-warning" role="alert">
+                            <i class="fa fa-exclamation-triangle"/> <strong>Important:</strong> After confirming, you will need to manually update the end time if the automatically calculated time is not correct.
+                        </div>
+                    </group>
+                </sheet>
+
+                <!-- Footer Buttons -->
+                <footer>
+                    <button name="action_back" 
+                            string="Back" 
+                            type="object" 
+                            class="btn-secondary"
+                            invisible="state == 'schedule'"/>
+                    
+                    <button name="action_next" 
+                            string="Next" 
+                            type="object" 
+                            class="btn-primary"
+                            invisible="state == 'confirm'"/>
+                    
+                    <button name="action_confirm_change" 
+                            string="Confirm Changes" 
+                            type="object" 
+                            class="btn-primary"
+                            invisible="state != 'confirm'"/>
+                    
+                    <button string="Cancel" 
+                            special="cancel" 
+                            class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action to open the wizard -->
+    <record id="action_fsm_change_appointment_wizard" model="ir.actions.act_window">
+        <field name="name">Change Appointment</field>
+        <field name="res_model">fsm.change.appointment.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="project.model_project_task"/>
+    </record>
+
+</odoo>

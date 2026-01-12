@@ -95,6 +95,11 @@ class FsmTaskType(models.Model):
         help="Show fiber install worksheet on tasks of this type.",
         default=False,
     )
+    requires_iptv_install = fields.Boolean(
+        string="Requires IPTV Install",
+        help="Show Cabal TV page and Activate IPTV button on tasks of this type.",
+        default=False,
+    )
     default_pon_type = fields.Selection(
         [("gpon", "GPON"), ("xgspon", "XGS-PON")],
         string="Default PON Type",
