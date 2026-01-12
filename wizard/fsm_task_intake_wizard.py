@@ -658,7 +658,13 @@ class FsmTaskIntakeWizard(models.TransientModel):
             if (wiz.planned_hours or 0.0) <= 0:
                 continue
 
-            start_dt = wiz.search_start_dt or (fields.Datetime.now() + timedelta(minutes=15))
+            # Base search start in user/local tz (default UTC-6) to avoid skipping "today" when server is UTC
+            if wiz.search_start_dt:
+                start_dt_ctx = fields.Datetime.context_timestamp(wiz, wiz.search_start_dt)
+            else:
+                start_dt_ctx = fields.Datetime.context_timestamp(wiz, fields.Datetime.now() + timedelta(minutes=15))
+            start_dt = wiz._round_to_nearest_10((start_dt_ctx.replace(tzinfo=None)) if start_dt_ctx else fields.Datetime.now())
+
             if wiz.filter_use_date and wiz.date_filter_start:
                 start_dt = datetime.combine(wiz.date_filter_start, time.min)
             search_end = datetime.combine(wiz.date_filter_end, time.max) if (wiz.filter_use_date and wiz.date_filter_end) else None
@@ -690,7 +696,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
                     chosen_start = start_dt_attempt
                     break
             # remember the start used; next run will bump from the last shown window
-            wiz.search_start_dt = chosen_start
+            wiz.search_start_dt = wiz._to_utc(chosen_start)
 
             # Deduplicate slots again before display to avoid identical entries
             uniq_slots = []
@@ -740,7 +746,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
             # Advance search start past the last shown slot to avoid repeats
             last_end = wiz.slot3_end or wiz.slot1_end or wiz.search_start_dt or fields.Datetime.now()
             if last_end:
-                wiz.search_start_dt = last_end + timedelta(hours=2.0)
+                wiz.search_start_dt = wiz._to_utc(last_end + timedelta(hours=2.0))
 
     # Navigation
     def action_next(self):
