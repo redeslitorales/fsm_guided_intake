@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20231127\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-12 04:05+0000\n"
-"PO-Revision-Date: 2026-01-11 22:12-0600\n"
+"POT-Creation-Date: 2026-01-13 20:00+0000\n"
+"PO-Revision-Date: 2026-01-13 14:03-0600\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -16,6 +16,48 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.8\n"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/project_task.py:0
+#, python-format
+msgid ""
+"\n"
+"\n"
+"=== ARCHIVED - Rescheduled to new task %s ===\n"
+msgstr ""
+"\n"
+"=== ARCHIVADO - Reprogramado a nueva tarea %s ===\n"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/project_task.py:0
+#, python-format
+msgid ""
+"\n"
+"\n"
+"=== Appointment Rescheduled (%s) ===\n"
+msgstr ""
+"\n"
+"=== Cita reprogramada (%s) ===\n"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/project_task.py:0
+#, python-format
+msgid ""
+"%(previous_label)s: %(previous)s\n"
+"%(new_label)s: %(new)s\n"
+msgstr ""
+"%(previous_label)s: %(previous)s\n"
+"%(new_label)s: %(new)s\n"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/project_task.py:0
+#, python-format
+msgid "%(reason_label)s: %(reason)s\n"
+msgstr "%(reason_label)s: %(reason)s\n"
 
 #. module: fsm_guided_intake
 #. odoo-python
@@ -179,14 +221,6 @@ msgid "Appointment Changes"
 msgstr "Cambios en los nombramientos"
 
 #. module: fsm_guided_intake
-#. odoo-python
-#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
-#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
-#, python-format
-msgid "Appointment Updated"
-msgstr "Nombramiento actualizado"
-
-#. module: fsm_guided_intake
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
 msgid "Assign Technicians (Optional)"
 msgstr "Asignar Técnicos (Opcional)"
@@ -213,6 +247,13 @@ msgid "Auto-create invoice draft when task reaches Done stage"
 msgstr ""
 "Crear automáticamente borrador de factura cuando la tarea llega a la fase de "
 "Finalizada"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,help:fsm_guided_intake.field_fsm_team__name
+msgid "Auto-generated name based on lead/warehouse to avoid manual typing"
+msgstr ""
+"Nombre generado automáticamente basado en el lead/almacén para evitar la "
+"escritura manual"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,help:fsm_guided_intake.field_fsm_change_appointment_wizard__planned_date_end
@@ -249,6 +290,15 @@ msgstr "Franjas horarias disponibles"
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
 msgid "Back"
 msgstr "Volver"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
+#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
+#, python-format
+msgid "Before saving this task, change the end date and time to %s."
+msgstr ""
+"Antes de guardar esta tarea, cambia la fecha y hora de finalización a %s."
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_product_product__fsm_bill_from_task
@@ -775,14 +825,6 @@ msgid "FSM Team Shift"
 msgstr "Cambio de equipo FSM"
 
 #. module: fsm_guided_intake
-#. odoo-python
-#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
-#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
-#, python-format
-msgid "Failed to update task: %s"
-msgstr "No se ha podido actualizar la tarea: %s"
-
-#. module: fsm_guided_intake
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_project_task_form_fiber_install
 msgid "Fiber Install"
 msgstr "Instalación de fibra"
@@ -826,6 +868,24 @@ msgstr ""
 #: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_team_shift__pattern__fri_wed
 msgid "Fri-Wed"
 msgstr "Viernes a miércoles"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__frozen_selected_end
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__frozen_selected_end
+msgid "Frozen Selected End"
+msgstr "Extremo Seleccionado Congelado"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__frozen_selected_start
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__frozen_selected_start
+msgid "Frozen Selected Start"
+msgstr "Inicio Seleccionado Congelado"
+
+#. module: fsm_guided_intake
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__frozen_selected_team_id
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard__frozen_selected_team_id
+msgid "Frozen Selected Team"
+msgstr "Equipo Seleccionado de Frozen"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_task_type__default_pon_type__gpon
@@ -1038,7 +1098,6 @@ msgstr "Lun-Vie"
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_booking__name
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__name
-#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__name
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team_shift__name
 msgid "Name"
 msgstr "Nombre"
@@ -1050,7 +1109,10 @@ msgid "Never Has Product"
 msgstr "Nunca ha producido"
 
 #. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/fsm_team.py:0
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_project_task_tree_fsm_guided_inherit
+#, python-format
 msgid "New"
 msgstr "Nuevo"
 
@@ -1071,6 +1133,13 @@ msgid "New Start Time"
 msgstr "Hora de nuevo inicio"
 
 #. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/project_task.py:0
+#, python-format
+msgid "New appointment"
+msgstr "Nueva reserva"
+
+#. module: fsm_guided_intake
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_change_appointment_wizard_form
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
 msgid "Next"
@@ -1078,7 +1147,6 @@ msgstr "Siguiente"
 
 #. module: fsm_guided_intake
 #. odoo-python
-#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
 #: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
 #, python-format
 msgid "No FSM team found for scheduling."
@@ -1141,6 +1209,13 @@ msgstr "No se ha encontrado ninguna tarea para actualizar."
 #, python-format
 msgid "No task to reschedule was provided."
 msgstr "No se asignó ninguna tarea para reprogramar."
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/project_task.py:0
+#, python-format
+msgid "Not set"
+msgstr "No establecido"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_change_appointment_wizard__state__notes
@@ -1331,6 +1406,13 @@ msgid "Previous Start Time"
 msgstr "Hora de inicio anterior"
 
 #. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/project_task.py:0
+#, python-format
+msgid "Previous appointment"
+msgstr "Nombramiento anterior"
+
+#. module: fsm_guided_intake
 #: model:ir.model,name:fsm_guided_intake.model_product_template
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_intake_wizard_line__product_id
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_material__product_id
@@ -1413,6 +1495,13 @@ msgid "RX Optical Power (dBm)"
 msgstr "Potencia Óptica (dBm) de la Receita"
 
 #. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/project_task.py:0
+#, python-format
+msgid "Reason"
+msgstr "Razón"
+
+#. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_change_appointment_wizard__notes
 msgid "Reason for Change / Notes"
 msgstr "Motivo del cambio / Notas"
@@ -1489,6 +1578,13 @@ msgstr "Requiere firma"
 #, python-format
 msgid "Reschedule Field Service Task - %s"
 msgstr "Reprogramar la tarea de servicio de campo - %s"
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
+#, python-format
+msgid "Rescheduled Appointment"
+msgstr "Cita reprogramada"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__iptv_stb_ids
@@ -1950,17 +2046,17 @@ msgstr "Equipo"
 
 #. module: fsm_guided_intake
 #. odoo-python
+#: code:addons/fsm_guided_intake/models/fsm_team.py:0
+#, python-format
+msgid "Team %s"
+msgstr "Equipo %s"
+
+#. module: fsm_guided_intake
+#. odoo-python
 #: code:addons/fsm_guided_intake/models/fsm_booking.py:0
 #, python-format
 msgid "Team '%s' has no warehouse set."
 msgstr "El equipo '%s' no tiene un set de almacén."
-
-#. module: fsm_guided_intake
-#. odoo-python
-#: code:addons/fsm_guided_intake/models/fsm_team.py:0
-#, python-format
-msgid "Team (no leader)"
-msgstr "Equipo (sin líder)"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__lead_user_id
@@ -1968,11 +2064,9 @@ msgid "Team Lead"
 msgstr "Líder de equipo"
 
 #. module: fsm_guided_intake
-#. odoo-python
-#: code:addons/fsm_guided_intake/models/fsm_team.py:0
-#, python-format
-msgid "Team Leader: %s"
-msgstr "Jefe de equipo: %s"
+#: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_team__name
+msgid "Team Name"
+msgstr "Nombre"
 
 #. module: fsm_guided_intake
 #: model:ir.actions.act_window,name:fsm_guided_intake.action_fsm_team
@@ -2000,14 +2094,6 @@ msgid "Tentative"
 msgstr "Tentativa"
 
 #. module: fsm_guided_intake
-#. odoo-python
-#: code:addons/fsm_guided_intake/wizard/fsm_change_appointment_wizard.py:0
-#: code:addons/fsm_guided_intake/wizard/fsm_task_intake_wizard.py:0
-#, python-format
-msgid "The appointment has been rescheduled."
-msgstr "La reserva ha sido reprogramada"
-
-#. module: fsm_guided_intake
 #: model_terms:ir.ui.view,arch_db:fsm_guided_intake.fsm_task_intake_wizard_form
 msgid ""
 "This customer does not have any sales orders. You can add products manually "
@@ -2025,6 +2111,24 @@ msgid ""
 msgstr ""
 "Este tipo de tarea requiere productos. Por favor, selecciona un pedido de "
 "venta o añade productos."
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/project_task.py:0
+#, python-format
+msgid "This task was archived and rescheduled as task #%s."
+msgstr "Esta tarea fue archivada y reprogramada como tarea #%s."
+
+#. module: fsm_guided_intake
+#. odoo-python
+#: code:addons/fsm_guided_intake/models/project_task.py:0
+#, python-format
+msgid ""
+"This task was created by rescheduling task #%s. The original task has been "
+"archived."
+msgstr ""
+"Esta tarea se creó reprogramando la tarea #%s. La tarea original ha sido "
+"archivada."
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields.selection,name:fsm_guided_intake.selection__fsm_team_shift__pattern__thu_mon

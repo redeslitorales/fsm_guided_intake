@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
+from datetime import datetime, timedelta, time
 
 
 class ProjectTaskMaterial(models.Model):
@@ -267,6 +268,133 @@ class ProjectTask(models.Model):
             if t.fsm_material_ids:
                 t._fsm_create_draft_invoice()
         return True
+
+    def reschedule_clone_to_new_task(self, start_dt_utc, end_dt_utc, team, duration_hours, notes=None, assignee_user_ids=None):
+        """Create a new task for the reschedule, archive the current one, and reuse the booking.
+
+        The caller must pass UTC-naive datetimes to avoid double conversions. Booking (and picking)
+        are moved forward to the new task to prevent duplicate stock reservations.
+        """
+        self.ensure_one()
+
+        # Build audit note
+        tz_name = self.env.context.get("tz") or self.env.user.tz or "UTC"
+        old_start_local = False
+        if self.planned_date_begin:
+            old_start_local = fields.Datetime.context_timestamp(self.with_context(tz=tz_name), self.planned_date_begin)
+        new_start_local = fields.Datetime.context_timestamp(self.with_context(tz=tz_name), start_dt_utc) if start_dt_utc else False
+        not_set_label = _("Not set")
+        old_start_str = old_start_local.strftime("%Y-%m-%d %H:%M") if old_start_local else not_set_label
+        new_start_str = new_start_local.strftime("%Y-%m-%d %H:%M") if new_start_local else not_set_label
+
+        timestamp = fields.Datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        note_header = _("\n\n=== Appointment Rescheduled (%s) ===\n") % timestamp
+        note_text = note_header + _("%(previous_label)s: %(previous)s\n%(new_label)s: %(new)s\n") % {
+            "previous_label": _("Previous appointment"),
+            "previous": old_start_str,
+            "new_label": _("New appointment"),
+            "new": new_start_str,
+        }
+        if notes:
+            note_text += _("%(reason_label)s: %(reason)s\n") % {
+                "reason_label": _("Reason"),
+                "reason": notes,
+            }
+
+        # Prepare assignees
+        assignee_user_ids = assignee_user_ids or []
+        if not assignee_user_ids and self.user_ids:
+            assignee_user_ids = self.user_ids.ids
+
+        # New task payload
+        new_task_vals = {
+            "name": self.name,
+            "partner_id": self.partner_id.id if self.partner_id else False,
+            "project_id": self.project_id.id if self.project_id else False,
+            "fsm_task_type_id": self.fsm_task_type_id.id if self.fsm_task_type_id else False,
+            "description": (self.description or "") + note_text,
+            "sale_order_id": self.sale_order_id.id if self.sale_order_id else False,
+            "sale_line_id": self.sale_line_id.id if hasattr(self, "sale_line_id") and self.sale_line_id else False,
+            "tag_ids": [(6, 0, self.tag_ids.ids)] if self.tag_ids else False,
+            "fsm_service_address_id": self.fsm_service_address_id.id if self.fsm_service_address_id else False,
+            "fsm_service_zone_name": self.fsm_service_zone_name,
+            "planned_date_begin": start_dt_utc,
+        }
+
+        if "planned_date_end" in self._fields:
+            new_task_vals["planned_date_end"] = end_dt_utc
+        if "planned_hours" in self._fields:
+            new_task_vals["planned_hours"] = duration_hours
+            new_task_vals["fsm_default_planned_hours"] = self.fsm_default_planned_hours or duration_hours
+        if "date_start" in self._fields:
+            new_task_vals["date_start"] = start_dt_utc
+        if "date_end" in self._fields:
+            new_task_vals["date_end"] = end_dt_utc
+        if "date_deadline" in self._fields and end_dt_utc:
+            deadline_dt = end_dt_utc
+            if isinstance(deadline_dt, datetime) and deadline_dt.time() != time.min:
+                deadline_dt = deadline_dt + timedelta(days=1)
+            new_task_vals["date_deadline"] = fields.Date.to_date(deadline_dt)
+        if self.stage_id:
+            new_task_vals["stage_id"] = self.stage_id.id
+        if "team_id" in self._fields and team:
+            new_task_vals["team_id"] = team.id
+        if assignee_user_ids and "user_ids" in self._fields:
+            new_task_vals["user_ids"] = [(6, 0, assignee_user_ids)]
+
+        new_task = self.sudo().create(new_task_vals)
+
+        # Move booking forward (reuse to keep delivery order linked) or create a new one
+        booking = False
+        if self.fsm_booking_id:
+            booking = self.fsm_booking_id.sudo()
+            booking.write({
+                "task_id": new_task.id,
+                "team_id": team.id if team else booking.team_id.id,
+                "start_datetime": start_dt_utc,
+                "end_datetime": end_dt_utc,
+                "allocated_hours": duration_hours,
+                "state": "confirmed",
+            })
+        elif team:
+            booking_ctx = dict(self.env.context)
+            booking_ctx.pop("default_state", None)
+            booking_ctx.pop("state", None)
+            booking = self.env["fsm.booking"].with_context(booking_ctx).sudo().create({
+                "task_id": new_task.id,
+                "team_id": team.id,
+                "start_datetime": start_dt_utc,
+                "end_datetime": end_dt_utc,
+                "allocated_hours": duration_hours,
+                "state": "confirmed",
+            })
+        if booking:
+            new_task.fsm_booking_id = booking.id
+            booking.with_context(self.env.context).action_create_or_update_delivery()
+
+        # Move materials so invoicing/pickings follow the active task
+        if self.fsm_material_ids:
+            self.fsm_material_ids.sudo().write({"task_id": new_task.id})
+
+        # Archive the old task
+        archive_note = note_text + _("\n\n=== ARCHIVED - Rescheduled to new task %s ===\n") % new_task.id
+        self.sudo().write({
+            "active": False,
+            "fsm_booking_id": False,
+            "description": (self.description or "") + archive_note,
+        })
+
+        # Audit messages
+        new_task.message_post(
+            body=_("This task was created by rescheduling task #%s. The original task has been archived.") % self.id,
+            message_type="comment",
+        )
+        self.message_post(
+            body=_("This task was archived and rescheduled as task #%s.") % new_task.id,
+            message_type="comment",
+        )
+
+        return new_task
 
     def send_whatsapp(self):
         """Stub method to satisfy enterprise FSM view validation.

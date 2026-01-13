@@ -196,6 +196,10 @@ class FsmTaskIntakeWizard(models.TransientModel):
         readonly=True,
         string="Selected Appointment",
     )
+    # Freeze the selected slot to avoid accidental recomputation overrides
+    frozen_selected_start = fields.Datetime(string="Frozen Selected Start", readonly=True)
+    frozen_selected_end = fields.Datetime(string="Frozen Selected End", readonly=True)
+    frozen_selected_team_id = fields.Many2one("fsm.team", string="Frozen Selected Team", readonly=True)
 
     # Step 5
     notes = fields.Text(string="Internal Notes")
@@ -461,6 +465,19 @@ class FsmTaskIntakeWizard(models.TransientModel):
         hours = self.task_type_id.default_planned_hours if self.task_type_id else self.planned_hours
         return max(hours or 0.0, 1.0)
 
+    def _build_end_time_warning_effect(self, end_dt_utc):
+        """Return a small visual reminder to align task end time to the booking end."""
+        self.ensure_one()
+        if not end_dt_utc:
+            return None
+        end_local = fields.Datetime.context_timestamp(self, end_dt_utc)
+        end_label = end_local.strftime("%Y-%m-%d %H:%M") if end_local else ""
+        return {
+            "fadeout": "slow",
+            "message": _("Before saving this task, change the end date and time to %s.") % end_label,
+            "type": "rainbow_man",
+        }
+
     def _find_top_slots(self, start_dt, limit=3, date_end=None, time_start=None, time_end=None):
         """
         Return a list of top available slots sorted by start time.
@@ -661,7 +678,6 @@ class FsmTaskIntakeWizard(models.TransientModel):
             search_end = datetime.combine(wiz.date_filter_end, time.max) if (wiz.filter_use_date and wiz.date_filter_end) else None
             # Scan forward in 2-hour increments (up to ~7 days) until we find slots.
             slots = []
-            chosen_start = start_dt
             max_attempts = 84  # 2-hour steps for 7 days
             for attempt in range(max_attempts):
                 start_dt_attempt = start_dt + timedelta(hours=attempt * 2.0)
@@ -684,10 +700,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
                     uniq.append(s)
                 slots = uniq
                 if slots:
-                    chosen_start = start_dt_attempt
                     break
-            # remember the start used; next run will bump from the last shown window
-            wiz.search_start_dt = chosen_start
 
             # Deduplicate slots again before display to avoid identical entries
             uniq_slots = []
@@ -734,10 +747,25 @@ class FsmTaskIntakeWizard(models.TransientModel):
                     slots[2]["start"].strftime("%H:%M"),
                     slots[2]["end"].strftime("%H:%M"),
                 )
-            # Advance search start past the last shown slot to avoid repeats
-            last_end = wiz.slot3_end or wiz.slot1_end or wiz.search_start_dt or fields.Datetime.now()
-            if last_end:
-                wiz.search_start_dt = last_end + timedelta(hours=2.0)
+
+    @api.onchange("selected_slot")
+    def _onchange_selected_slot(self):
+        """Persist the chosen slot so later recomputes do not replace it."""
+        slot_map = {
+            "1": (self.slot1_start, self.slot1_end, self.slot1_team_id),
+            "2": (self.slot2_start, self.slot2_end, self.slot2_team_id),
+            "3": (self.slot3_start, self.slot3_end, self.slot3_team_id),
+        }
+        start_dt, end_dt, team_id = slot_map.get(self.selected_slot, (self.slot1_start, self.slot1_end, self.slot1_team_id))
+        values = {
+            "frozen_selected_start": start_dt,
+            "frozen_selected_end": end_dt,
+            "frozen_selected_team_id": team_id.id if team_id else False,
+        }
+        if self.id:
+            self.write(values)
+        else:
+            self.update(values)
 
     # Navigation
     def action_next(self):
@@ -758,6 +786,9 @@ class FsmTaskIntakeWizard(models.TransientModel):
         else:
             if self.state == "schedule" and not (self.slot1_start or self.slot2_start or self.slot3_start):
                 raise UserError(_("No available appointment slots were found."))
+            if self.state == "schedule" and not self.frozen_selected_start:
+                # Freeze the currently selected slot before the form reloads
+                self._onchange_selected_slot()
             self.state = order[min(idx+1, len(order)-1)]
         return {
             "type": "ir.actions.act_window",
@@ -766,7 +797,14 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "res_id": self.id,
             "target": "new",
             "name": self._get_wizard_title(),
-            "context": dict(self.env.context, slot_labels=self._get_slot_label_map(), search_start_dt=self.search_start_dt),
+            "context": dict(
+                self.env.context,
+                slot_labels=self._get_slot_label_map(),
+                search_start_dt=self.search_start_dt,
+                frozen_slot_start=self.frozen_selected_start and self.frozen_selected_start.isoformat(),
+                frozen_slot_end=self.frozen_selected_end and self.frozen_selected_end.isoformat(),
+                frozen_slot_team_id=self.frozen_selected_team_id.id if self.frozen_selected_team_id else False,
+            ),
         }
 
     def action_back(self):
@@ -954,12 +992,16 @@ class FsmTaskIntakeWizard(models.TransientModel):
             raise UserError(_("Booking creation failed: %s\nDebug payload: %s") % (e, debug_payload))
 
         # Open created task
-        return {
+        action = {
             "type": "ir.actions.act_window",
             "res_model": "project.task",
             "view_mode": "form",
             "res_id": task.id,
         }
+        warning_effect = self._build_end_time_warning_effect(end_dt_utc)
+        if warning_effect:
+            action["effect"] = warning_effect
+        return action
 
     def _action_reschedule_task(self):
         self.ensure_one()
@@ -967,16 +1009,22 @@ class FsmTaskIntakeWizard(models.TransientModel):
         if not task:
             raise UserError(_("No task to reschedule was provided."))
 
-        slot_map = {
-            "1": (self.slot1_start, self.slot1_end, self.slot1_team_id),
-            "2": (self.slot2_start, self.slot2_end, self.slot2_team_id),
-            "3": (self.slot3_start, self.slot3_end, self.slot3_team_id),
-        }
-        start_dt, end_dt, slot_team = slot_map.get(self.selected_slot, (self.slot1_start, self.slot1_end, self.slot1_team_id))
+        # Prefer frozen values captured on the schedule step to avoid later recomputes
+        start_dt = self.frozen_selected_start
+        end_dt = self.frozen_selected_end
+        slot_team = self.frozen_selected_team_id
+        if not start_dt or not end_dt:
+            slot_map = {
+                "1": (self.slot1_start, self.slot1_end, self.slot1_team_id),
+                "2": (self.slot2_start, self.slot2_end, self.slot2_team_id),
+                "3": (self.slot3_start, self.slot3_end, self.slot3_team_id),
+            }
+            start_dt, end_dt, slot_team = slot_map.get(self.selected_slot, (self.slot1_start, self.slot1_end, self.slot1_team_id))
         if not start_dt or not end_dt:
             raise UserError(_("Please pick an available appointment slot."))
 
-        duration_hours = self._get_duration_hours()
+        # Some deployments may not include planned_hours on project.task; guard access
+        duration_hours = task.planned_hours if "planned_hours" in task._fields and task.planned_hours else self._get_duration_hours()
         end_dt = start_dt + timedelta(hours=duration_hours)
 
         team = slot_team or self.team_id
@@ -987,17 +1035,6 @@ class FsmTaskIntakeWizard(models.TransientModel):
         if not team:
             raise UserError(_("No FSM team found for scheduling."))
 
-        start_dt_utc = self._to_utc(start_dt)
-        end_dt_utc = self._to_utc(end_dt)
-
-        update_vals = {
-            "planned_date_begin": start_dt_utc,
-        }
-        if "planned_date_end" in task._fields:
-            update_vals["planned_date_end"] = end_dt_utc
-        if "planned_hours" in task._fields:
-            update_vals["planned_hours"] = duration_hours
-
         assignee_user_ids = []
         if team:
             if team.lead_user_id:
@@ -1005,77 +1042,31 @@ class FsmTaskIntakeWizard(models.TransientModel):
             member_users = team.member_ids.mapped("user_id").filtered(lambda u: u)
             assignee_user_ids += member_users.ids
         elif "user_ids" in task._fields and task.user_ids:
-            # Fallback: keep current assignees only when no team was provided
             assignee_user_ids = task.user_ids.ids
-        if assignee_user_ids and "user_ids" in task._fields:
-            update_vals["user_ids"] = [(6, 0, list(dict.fromkeys(assignee_user_ids)))]
+        assignee_user_ids = list(dict.fromkeys(assignee_user_ids))
 
-        if self.notes:
-            current_description = task.description or ""
-            timestamp = fields.Datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            note_header = f"\n\n=== Appointment Rescheduled ({timestamp}) ===\n"
-            new_note = f"{note_header}{self.notes}\n"
-            update_vals["description"] = current_description + new_note
+        start_dt_utc = self._to_utc(start_dt)
+        end_dt_utc = self._to_utc(end_dt)
 
-        old_start = task.planned_date_begin.strftime("%Y-%m-%d %H:%M") if getattr(task, "planned_date_begin", False) else "Not set"
-        new_start = start_dt.strftime("%Y-%m-%d %H:%M")
+        new_task = task.reschedule_clone_to_new_task(
+            start_dt_utc=start_dt_utc,
+            end_dt_utc=end_dt_utc,
+            team=team,
+            duration_hours=duration_hours,
+            notes=self.notes,
+            assignee_user_ids=assignee_user_ids,
+        )
 
-        message_body = f"""
-        <p><strong>Appointment Rescheduled</strong></p>
-        <ul>
-            <li><strong>Previous Start:</strong> {old_start}</li>
-            <li><strong>New Start:</strong> {new_start}</li>
-        """
-
-        if assignee_user_ids:
-            names = ", ".join(self.env["res.users"].browse(assignee_user_ids).mapped("name"))
-            message_body += f"<li><strong>Assigned To:</strong> {names}</li>"
-
-        if team:
-            message_body += f"<li><strong>Team:</strong> {team.display_name}</li>"
-
-        if self.notes:
-            message_body += f"<li><strong>Reason:</strong> {self.notes}</li>"
-
-        message_body += "</ul>"
-
-        try:
-            task.write(update_vals)
-            booking = getattr(task, "fsm_booking_id", False)
-            if booking:
-                booking.write({
-                    "team_id": team.id,
-                    "start_datetime": start_dt_utc,
-                    "end_datetime": end_dt_utc,
-                    "allocated_hours": duration_hours,
-                    "state": "confirmed",
-                })
-            else:
-                booking = self.env["fsm.booking"].create({
-                    "task_id": task.id,
-                    "team_id": team.id,
-                    "start_datetime": start_dt_utc,
-                    "end_datetime": end_dt_utc,
-                    "allocated_hours": duration_hours,
-                    "state": "confirmed",
-                })
-                task.fsm_booking_id = booking.id
-
-            task.message_post(body=message_body, subject="Appointment Rescheduled")
-        except Exception as e:
-            raise UserError(_("Failed to update task: %s") % e)
-
-        return {
-            "type": "ir.actions.client",
-            "tag": "display_notification",
-            "params": {
-                "title": _("Appointment Updated"),
-                "message": _("The appointment has been rescheduled."),
-                "type": "success",
-                "sticky": False,
-                "next": {"type": "ir.actions.act_window_close"},
-            },
+        action = {
+            "type": "ir.actions.act_window",
+            "res_model": "project.task",
+            "res_id": new_task.id,
+            "view_mode": "form",
         }
+        warning_effect = self._build_end_time_warning_effect(end_dt_utc)
+        if warning_effect:
+            action["effect"] = warning_effect
+        return action
 
     @api.model
     def fields_view_get(self, view_id=None, view_type="form", toolbar=False, submenu=False):

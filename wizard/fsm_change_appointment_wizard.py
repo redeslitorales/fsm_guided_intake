@@ -99,6 +99,11 @@ class FsmChangeAppointmentWizard(models.TransientModel):
     selected_slot = fields.Selection(selection='_get_slot_selection', default='1', string='Choose Appointment')
     selected_slot_label = fields.Char(compute='_compute_selected_slot_label', readonly=True, string='Selected Appointment')
 
+    # Frozen selected slot data (captured when user selects slot, won't change when slots recompute)
+    frozen_selected_start = fields.Datetime(string='Frozen Selected Start', readonly=True)
+    frozen_selected_end = fields.Datetime(string='Frozen Selected End', readonly=True)
+    frozen_selected_team_id = fields.Many2one('fsm.team', string='Frozen Selected Team', readonly=True)
+
     # Assignee fields
     user_ids = fields.Many2many(
         'res.users',
@@ -132,6 +137,14 @@ class FsmChangeAppointmentWizard(models.TransientModel):
                 wizard.planned_date_end = wizard.planned_date_begin + timedelta(hours=wizard.planned_hours)
             else:
                 wizard.planned_date_end = False
+
+    @api.onchange('planned_date_begin', 'planned_hours')
+    def _onchange_planned_date_begin(self):
+        """Update end date when start date or duration changes"""
+        if self.planned_date_begin and self.planned_hours:
+            self.planned_date_end = self.planned_date_begin + timedelta(hours=self.planned_hours)
+        else:
+            self.planned_date_end = False
 
     @api.depends('task_id')
     def _compute_preferred_and_capable_teams(self):
@@ -193,6 +206,19 @@ class FsmChangeAppointmentWizard(models.TransientModel):
         if not hours and self.task_id and hasattr(self.task_id, 'planned_hours'):
             hours = self.task_id.planned_hours
         return max(hours or 0.0, 1.0)
+
+    def _build_end_time_warning_effect(self, end_dt_utc):
+        """Return a reminder effect so agents adjust the task end to the booking end."""
+        self.ensure_one()
+        if not end_dt_utc:
+            return None
+        end_local = fields.Datetime.context_timestamp(self, end_dt_utc)
+        end_label = end_local.strftime("%Y-%m-%d %H:%M") if end_local else ""
+        return {
+            "fadeout": "slow",
+            "message": _("Before saving this task, change the end date and time to %s.") % end_label,
+            "type": "rainbow_man",
+        }
 
     def _get_slot_label_map(self):
         self.ensure_one()
@@ -464,12 +490,33 @@ class FsmChangeAppointmentWizard(models.TransientModel):
 
     @api.onchange('selected_slot')
     def _onchange_selected_slot(self):
+        """Capture and freeze selected slot data so it doesn't change when slots recompute"""
+        if not self.selected_slot:
+            return
+            
         slot_map = {
-            '1': self.slot1_start,
-            '2': self.slot2_start,
-            '3': self.slot3_start,
+            '1': (self.slot1_start, self.slot1_end, self.slot1_team_id),
+            '2': (self.slot2_start, self.slot2_end, self.slot2_team_id),
+            '3': (self.slot3_start, self.slot3_end, self.slot3_team_id),
         }
-        start_dt = slot_map.get(self.selected_slot) or self.slot1_start
+        start_dt, end_dt, team_id = slot_map.get(self.selected_slot, (self.slot1_start, self.slot1_end, self.slot1_team_id))
+        
+        # CRITICAL: Persist frozen values immediately to database
+        # This prevents them from being lost when slots recompute
+        if self.id:
+            self.write({
+                'frozen_selected_start': start_dt,
+                'frozen_selected_end': end_dt,
+                'frozen_selected_team_id': team_id.id if team_id else False,
+            })
+            _logger.info(f"[ONCHANGE] Frozen slot {self.selected_slot} -> {start_dt} to {end_dt}")
+        else:
+            # Wizard not yet saved, set in-memory
+            self.frozen_selected_start = start_dt
+            self.frozen_selected_end = end_dt
+            self.frozen_selected_team_id = team_id
+        
+        # Update planned dates
         if start_dt:
             self.planned_date_begin = start_dt
             duration = self._get_duration_hours()
@@ -527,6 +574,35 @@ class FsmChangeAppointmentWizard(models.TransientModel):
         if self.state == "schedule" and not (self.slot1_start or self.slot2_start or self.slot3_start):
             raise UserError(_("No available appointment slots were found."))
         
+        # CRITICAL: Capture slot data NOW before state transition
+        # This data will be passed via context and won't be lost when slots recompute
+        ctx = dict(self.env.context, slot_labels=self._get_slot_label_map(), search_start_dt=self.search_start_dt)
+        
+        if self.state == "schedule" and self.selected_slot:
+            # Get the actual slot data from current computed values
+            slot_map = {
+                '1': (self.slot1_start, self.slot1_end, self.slot1_team_id),
+                '2': (self.slot2_start, self.slot2_end, self.slot2_team_id),
+                '3': (self.slot3_start, self.slot3_end, self.slot3_team_id),
+            }
+            start_dt, end_dt, team_id = slot_map.get(self.selected_slot, (self.slot1_start, self.slot1_end, self.slot1_team_id))
+            
+            # Store in context so it survives the form reload
+            ctx.update({
+                'frozen_slot_start': start_dt.isoformat() if start_dt else False,
+                'frozen_slot_end': end_dt.isoformat() if end_dt else False,
+                'frozen_slot_team_id': team_id.id if team_id else False,
+                'frozen_slot_number': self.selected_slot,
+            })
+            
+            # Also persist to DB fields as backup
+            self.sudo().write({
+                'frozen_selected_start': start_dt,
+                'frozen_selected_end': end_dt,
+                'frozen_selected_team_id': team_id.id if team_id else False,
+            })
+            _logger.info(f"[ACTION_NEXT] Captured slot {self.selected_slot}: {start_dt} to {end_dt} (team: {team_id.name if team_id else 'None'})")
+        
         # Determine next state
         order = ["schedule", "notes", "confirm"]
         idx = order.index(self.state)
@@ -543,7 +619,7 @@ class FsmChangeAppointmentWizard(models.TransientModel):
             "res_id": self.id,
             "target": "new",
             "name": self._get_wizard_title(),
-            "context": dict(self.env.context, slot_labels=self._get_slot_label_map(), search_start_dt=self.search_start_dt),
+            "context": ctx,
         }
 
     def action_back(self):
@@ -579,42 +655,53 @@ class FsmChangeAppointmentWizard(models.TransientModel):
         }
 
     def action_confirm_change(self):
-        """Apply the appointment changes to the task"""
+        """Archive the old task and create a new one with the rescheduled appointment"""
         self.ensure_one()
         
         if not self.task_id:
             raise UserError(_("No task found to update."))
-        slot_map = {
-            '1': (self.slot1_start, self.slot1_end, self.slot1_team_id),
-            '2': (self.slot2_start, self.slot2_end, self.slot2_team_id),
-            '3': (self.slot3_start, self.slot3_end, self.slot3_team_id),
-        }
-        start_dt, end_dt, slot_team = slot_map.get(self.selected_slot, (self.slot1_start, self.slot1_end, self.slot1_team_id))
-        if not start_dt or not end_dt:
+        
+        # Try to get slot data from context FIRST (most reliable)
+        # Context values are passed from action_next() and survive form reload
+        ctx = self.env.context
+        start_dt = None
+        end_dt = None
+        slot_team = None
+        
+        if ctx.get('frozen_slot_start'):
+            # Parse ISO datetime from context
+            from dateutil import parser
+            start_dt = parser.parse(ctx['frozen_slot_start'])
+            end_dt = parser.parse(ctx['frozen_slot_end']) if ctx.get('frozen_slot_end') else None
+            if ctx.get('frozen_slot_team_id'):
+                slot_team = self.env['fsm.team'].browse(ctx['frozen_slot_team_id'])
+            _logger.info(f"[CONFIRM] Using slot data from CONTEXT: {start_dt} to {end_dt}")
+        else:
+            # Fallback to frozen database fields
+            start_dt = self.frozen_selected_start
+            end_dt = self.frozen_selected_end
+            slot_team = self.frozen_selected_team_id
+            _logger.info(f"[CONFIRM] Using slot data from FROZEN FIELDS: {start_dt} to {end_dt}")
+        
+        if not start_dt:
             raise UserError(_("Please pick an available appointment slot."))
 
+        # Calculate end date based on duration
         duration_hours = self._get_duration_hours()
         end_dt = start_dt + timedelta(hours=duration_hours)
 
+        # Determine team
         team = slot_team or self.team_id
         if not team and self.task_id.fsm_booking_id:
             team = self.task_id.fsm_booking_id.team_id
         if not team:
             team = self.env['fsm.team'].search([], limit=1)
-        if not team:
-            raise UserError(_("No FSM team found for scheduling."))
 
+        # Convert to UTC
         start_dt_utc = self._to_utc(start_dt)
         end_dt_utc = self._to_utc(end_dt)
 
-        update_vals = {
-            'planned_date_begin': start_dt_utc,
-        }
-        if 'planned_date_end' in self.task_id._fields:
-            update_vals['planned_date_end'] = end_dt_utc
-        if 'planned_hours' in self.task_id._fields:
-            update_vals['planned_hours'] = duration_hours
-
+        # Prepare assignees
         assignee_user_ids = []
         if self.user_ids:
             assignee_user_ids = self.user_ids.ids
@@ -623,77 +710,35 @@ class FsmChangeAppointmentWizard(models.TransientModel):
                 assignee_user_ids.append(team.lead_user_id.id)
             member_users = team.member_ids.mapped('user_id').filtered(lambda u: u)
             assignee_user_ids += member_users.ids
-        if assignee_user_ids:
-            update_vals['user_ids'] = [(6, 0, list(dict.fromkeys(assignee_user_ids)))]
+        elif self.task_id.user_ids:
+            assignee_user_ids = self.task_id.user_ids.ids
+        assignee_user_ids = list(dict.fromkeys(assignee_user_ids))
 
-        if self.notes:
-            current_description = self.task_id.description or ''
-            timestamp = fields.Datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            note_header = f"\n\n=== Appointment Rescheduled ({timestamp}) ===\n"
-            new_note = f"{note_header}{self.notes}\n"
-            update_vals['description'] = current_description + new_note
+        new_task = self.task_id.reschedule_clone_to_new_task(
+            start_dt_utc=start_dt_utc,
+            end_dt_utc=end_dt_utc,
+            team=team,
+            duration_hours=duration_hours,
+            notes=self.notes,
+            assignee_user_ids=assignee_user_ids,
+        )
 
-        old_start = self.current_planned_date_begin.strftime('%Y-%m-%d %H:%M') if self.current_planned_date_begin else 'Not set'
-        new_start = start_dt.strftime('%Y-%m-%d %H:%M')
+        _logger.info(f"Task {self.task_id.id} archived. New task created with ID: {new_task.id}")
 
-        message_body = f"""
-        <p><strong>Appointment Rescheduled</strong></p>
-        <ul>
-            <li><strong>Previous Start:</strong> {old_start}</li>
-            <li><strong>New Start:</strong> {new_start}</li>
-        """
-
-        if assignee_user_ids:
-            names = ', '.join(self.env['res.users'].browse(assignee_user_ids).mapped('name'))
-            message_body += f"<li><strong>Assigned To:</strong> {names}</li>"
-
-        if team:
-            message_body += f"<li><strong>Team:</strong> {team.display_name}</li>"
-
-        if self.notes:
-            message_body += f"<li><strong>Reason:</strong> {self.notes}</li>"
-
-        message_body += "</ul>"
-
-        try:
-            self.task_id.write(update_vals)
-            booking = self.task_id.fsm_booking_id
-            if booking:
-                booking.write({
-                    'team_id': team.id,
-                    'start_datetime': start_dt_utc,
-                    'end_datetime': end_dt_utc,
-                    'allocated_hours': duration_hours,
-                    'state': 'confirmed',
-                })
-            else:
-                booking = self.env['fsm.booking'].create({
-                    'task_id': self.task_id.id,
-                    'team_id': team.id,
-                    'start_datetime': start_dt_utc,
-                    'end_datetime': end_dt_utc,
-                    'allocated_hours': duration_hours,
-                    'state': 'confirmed',
-                })
-                self.task_id.fsm_booking_id = booking.id
-
-            self.task_id.message_post(body=message_body, subject="Appointment Rescheduled")
-            _logger.info(f"Task {self.task_id.id} appointment rescheduled from {old_start} to {new_start}")
-        except Exception as e:
-            _logger.error(f"Failed to update task {self.task_id.id}: {str(e)}")
-            raise UserError(_("Failed to update task: %s") % str(e))
-
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('Appointment Updated'),
-                'message': _('The appointment has been rescheduled.'),
-                'type': 'success',
-                'sticky': False,
-                'next': {'type': 'ir.actions.act_window_close'}
-            }
+        # Open the new task
+        action = {
+            'type': 'ir.actions.act_window',
+            'name': _('Rescheduled Appointment'),
+            'res_model': 'project.task',
+            'res_id': new_task.id,
+            'view_mode': 'form',
+            'view_type': 'form',
+            'target': 'current',
         }
+        warning_effect = self._build_end_time_warning_effect(end_dt_utc)
+        if warning_effect:
+            action['effect'] = warning_effect
+        return action
 
     @api.model
     def fields_view_get(self, view_id=None, view_type="form", toolbar=False, submenu=False):

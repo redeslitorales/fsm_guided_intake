@@ -7,17 +7,13 @@ class FsmTeam(models.Model):
     _description = "FSM Team"
     _order = "name"
 
-    name = fields.Char(compute="_compute_name", store=True, required=True)
-
-    @api.depends('lead_user_id')
-    def _compute_name(self):
-        for rec in self:
-            if rec.lead_user_id:
-                rec.name = _('Team Leader: %s') % (rec.lead_user_id.name or '')
-            else:
-                # fallback to original name if needed (could use an extra field if you want editable base name)
-                rec.name = _('Team (no leader)')
-# ...existing code...
+    name = fields.Char(
+        string="Team Name",
+        compute="_compute_name",
+        store=True,
+        readonly=True,
+        help="Auto-generated name based on lead/warehouse to avoid manual typing",
+    )
     active = fields.Boolean(default=True)
 
     member_ids = fields.Many2many("hr.employee", string="Technicians")
@@ -36,6 +32,22 @@ class FsmTeam(models.Model):
         string="Capable Task Types",
     )
     shift_ids = fields.One2many("fsm.team.shift", "team_id", string="Shifts")
+
+    @api.depends("lead_user_id", "warehouse_id", "member_ids", "member_ids.name")
+    def _compute_name(self):
+        for team in self:
+            parts = []
+            if team.lead_user_id:
+                parts.append(team.lead_user_id.name)
+            if team.warehouse_id:
+                parts.append(team.warehouse_id.name)
+            if not parts and team.member_ids:
+                # Use up to two member names as a fallback label
+                member_names = [m.name for m in team.member_ids[:2] if m.name]
+                if member_names:
+                    parts.append(" / ".join(member_names))
+            fallback = _("Team %s") % (team.id or _("New"))
+            team.name = " - ".join(parts) if parts else fallback
 
     def get_default_picking_type_out(self):
         self.ensure_one()
