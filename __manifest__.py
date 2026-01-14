@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Cabal FSM Customizations",
-    "version": "17.0.2.0.0",
+    "version": "17.0.2.0.1",
     "category": "Services/Field Service",
     "summary": "Guided task intake wizard with task types, team capacity scheduling, and stock reservation on scheduling.",
     "depends": ["project", "industry_fsm", "stock", "sale_management", "fleet", "sale", "iptv_management"],
@@ -21,30 +21,5 @@
     ],
     "installable": True,
     "application": False,
-    "license": "LGPL-3",
-}# -*- coding: utf-8 -*-
-{
-    "name": "Cabal FSM Customizations",
-    "version": "17.0.1.4.0",
-    "category": "Services/Field Service",
-    "summary": "Guided task intake wizard with task types, team capacity scheduling, and stock reservation on scheduling.",
-    "depends": ["project", "industry_fsm", "stock", "sale_management", "fleet", "sale", "iptv_management"],
-    "data": [
-        "security/security.xml",
-        "security/ir.model.access.csv",
-        "views/fsm_task_type_views.xml",
-        "views/fsm_team_views.xml",
-        "views/fsm_booking_views.xml",
-        "wizard/fsm_task_intake_wizard_views.xml",
-        "wizard/fsm_change_appointment_wizard_views.xml",
-        "views/project_task_views.xml",
-        "views/sale_order_views.xml",
-        "views/res_config_settings_views.xml",
-        "views/product_views.xml",
-        "data/ir_cron.xml",
-        "data/sequence.xml",
-    ],
-    "installable": True,
-        "version": "17.0.2.0.0",
     "license": "LGPL-3",
 }
