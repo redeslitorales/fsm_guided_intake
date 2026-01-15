@@ -23,6 +23,12 @@
                             <field name="fsm_slot_start_lead_minutes"/>
                         </setting>
                     </block>
+                    <block title="Installation Tracking">
+                        <setting string="Installation Task Type"
+                                 help="When a task is created with this task type, it will automatically link to the subscription's installation_task_id field.">
+                            <field name="installation_task_type_id" placeholder="Select Task Type..."/>
+                        </setting>
+                    </block>
                 </app>
             </xpath>
         </field>

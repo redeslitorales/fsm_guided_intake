@@ -35,7 +35,7 @@
                     icon="fa-calendar"
                     class="btn btn-warning"
                     context="{'active_model': 'project.task', 'active_id': active_id, 'reschedule_task_id': active_id, 'state': 'schedule'}"/>
-                <button name="%(cpe_assets.activation_wizard_entry)d"
+                <button name="%(cpe_assets.activation_wizard_entry_v2)d"
                         type="action"
                         string="Activate Internet"
                         icon="fa-globe"
@@ -87,23 +87,41 @@
                     </group>
 
                     <group>
+                        <group string="Cat6 (Optional)">
+                            <field name="fsm_cat6_installed"/>
+                            <group invisible="not fsm_cat6_installed">
+                                <group>
+                                    <field name="fsm_cat6_meters"/>
+                                    <field name="fsm_cat6_rj45"/>
+                                    <field name="fsm_cat6_wall_jacks"/>
+                                </group>
+                                <field name="fsm_cat6_notes"/>
+                            </group>
+                        </group>
+                        <group string="Fiber Infrastructure">
+                            <field name="fsm_distribution_box"/>
+                            <field name="fsm_splitter_thread"/>
+                            <field name="fsm_drop_cable_start"/>
+                            <field name="fsm_drop_cable_end"/>
+                        </group>
+                    </group>
+
+                    <group>
                         <group string="Optical Levels">
                             <field name="fsm_rx_dbm" required="1"/>
                             <field name="fsm_tx_dbm" required="1"/>
                             <field name="fsm_optics_in_spec" readonly="1"/>
                         </group>
                         <group string="Service Validation">
+                            <field name="fsm_validation_type"/>
                             <field name="fsm_authenticated" required="1"/>
                             <field name="fsm_speed_down" required="1"/>
                             <field name="fsm_speed_up" required="1"/>
                         </group>
                     </group>
 
-                    <group string="Cat6 (Optional)">
-                        <field name="fsm_cat6_installed"/>
-                        <group invisible="not fsm_cat6_installed">
-                            <field name="fsm_cat6_notes"/>
-                        </group>
+                    <group string="Customer Signature">
+                        <field name="fsm_customer_signature" widget="image" options="{'size': [400, 200]}"/>
                     </group>
 
                     <group>

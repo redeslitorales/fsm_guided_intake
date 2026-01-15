@@ -21,3 +21,9 @@ class ResConfigSettings(models.TransientModel):
         default=0,
         help="Minutes to add after shift start before the first slot can begin.",
     )
+    installation_task_type_id = fields.Many2one(
+        "fsm.task.type",
+        string="Installation Task Type",
+        config_parameter="fsm_guided_intake.installation_task_type_id",
+        help="Tasks of this type will automatically link to the subscription's installation_task_id field.",
+    )

@@ -77,18 +77,34 @@ class ProjectTask(models.Model):
     )
     fsm_ont_serial = fields.Char(string="ONT Serial", copy=False)
     fsm_ont_pon_sn = fields.Char(string="ONT PON SN", copy=False)
-    fsm_rx_dbm = fields.Float(string="RX Optical Power (dBm)", digits=(16, 2), copy=False)
-    fsm_tx_dbm = fields.Float(string="TX Optical Power (dBm)", digits=(16, 2), copy=False)
+    fsm_rx_dbm = fields.Float(string="RX (1410) Optical Power (dBm)", digits=(16, 2), copy=False)
+    fsm_tx_dbm = fields.Float(string="TX (1390) Optical Power (dBm)", digits=(16, 2), copy=False)
     fsm_optics_in_spec = fields.Boolean(
         string="Optical Levels In Spec",
         compute="_compute_fsm_optics_in_spec",
         store=True,
     )
+    fsm_validation_type = fields.Selection(
+        [("cabled", "Cabled"), ("wireless", "Wireless")],
+        string="Validation Type",
+        copy=False,
+    )
     fsm_authenticated = fields.Boolean(string="Authenticated", copy=False)
     fsm_speed_down = fields.Float(string="Speed Down (Mbps)", digits=(16, 2), copy=False)
     fsm_speed_up = fields.Float(string="Speed Up (Mbps)", digits=(16, 2), copy=False)
     fsm_cat6_installed = fields.Boolean(string="Cat6 Installed", copy=False)
+    fsm_cat6_meters = fields.Float(string="Cable Meters", digits=(16, 2), copy=False, help="Meters of Cat6 cable installed")
+    fsm_cat6_rj45 = fields.Integer(string="RJ45 Connectors", copy=False, help="Number of RJ45 connectors installed")
+    fsm_cat6_wall_jacks = fields.Integer(string="Wall Jacks", copy=False, help="Number of wall jacks installed")
     fsm_cat6_notes = fields.Text(string="Cat6 Notes", copy=False)
+    
+    # Fiber infrastructure fields
+    fsm_distribution_box = fields.Char(string="Distribution Box", copy=False)
+    fsm_splitter_thread = fields.Char(string="Splitter Thread", copy=False)
+    fsm_drop_cable_start = fields.Char(string="Drop Cable Start", copy=False)
+    fsm_drop_cable_end = fields.Char(string="Drop Cable End", copy=False)
+    fsm_customer_signature = fields.Binary(string="Customer Signature", copy=False, attachment=True)
+    
     fsm_install_complete = fields.Boolean(
         string="Install Worksheet Complete",
         compute="_compute_fsm_install_complete",
@@ -124,6 +140,38 @@ class ProjectTask(models.Model):
         readonly=True,
         store=False
     )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Override create to auto-link installation tasks to subscriptions."""
+        tasks = super().create(vals_list)
+        tasks._link_installation_task_to_subscription()
+        return tasks
+
+    def write(self, vals):
+        """Override write to update installation task link when task type or sale order changes."""
+        res = super().write(vals)
+        if 'fsm_task_type_id' in vals or 'sale_order_id' in vals:
+            self._link_installation_task_to_subscription()
+        return res
+
+    def _link_installation_task_to_subscription(self):
+        """Link task to subscription's installation_task_id if task type matches setting."""
+        installation_type_id = int(
+            self.env['ir.config_parameter'].sudo().get_param(
+                'fsm_guided_intake.installation_task_type_id', '0'
+            )
+        )
+        if not installation_type_id:
+            return
+
+        for task in self:
+            if (
+                task.fsm_task_type_id.id == installation_type_id
+                and task.sale_order_id
+                and task.sale_order_id.installation_task_id != task
+            ):
+                task.sale_order_id.installation_task_id = task.id
 
     def _fsm_create_draft_invoice(self):
         """Create/Update SO from task materials and create a draft invoice (account.move).
