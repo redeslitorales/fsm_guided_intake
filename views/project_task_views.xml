@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
     <!-- Tree: add New button for intake wizard -->
     <record id="view_project_task_tree_fsm_guided_inherit" model="ir.ui.view">
         <field name="name">project.task.tree.fsm.guided.inherit</field>
@@ -11,8 +12,10 @@
             </xpath>
             <xpath expr="//tree" position="inside">
                 <header>
-                    <button name="%(fsm_guided_intake.action_fsm_task_intake_wizard)d" type="action"
-                            string="New" class="btn-primary"/>
+                    <button name="%(fsm_guided_intake.action_fsm_task_intake_wizard)d"
+                            type="action"
+                            string="New"
+                            class="btn-primary"/>
                 </header>
             </xpath>
         </field>
@@ -22,19 +25,19 @@
     <record id="view_project_task_form_fiber_install" model="ir.ui.view">
         <field name="name">project.task.form.fiber.install</field>
         <field name="model">project.task</field>
-        <!-- Fall back to base project task form to avoid missing xmlid in some builds -->
         <field name="inherit_id" ref="project.view_task_form2"/>
         <field name="arch" type="xml">
-            <!-- Add Activate Internet button to header -->
             <xpath expr="//form/header" position="inside">
                 <field name="fsm_requires_fiber_install" invisible="1"/>
                 <field name="fsm_requires_iptv_install" invisible="1"/>
+
                 <button name="%(fsm_guided_intake.action_fsm_task_intake_wizard)d"
-                    type="action"
-                    string="Change Appointment"
-                    icon="fa-calendar"
-                    class="btn btn-warning"
-                    context="{'active_model': 'project.task', 'active_id': active_id, 'reschedule_task_id': active_id, 'state': 'schedule'}"/>
+                        type="action"
+                        string="Change Appointment"
+                        icon="fa-calendar"
+                        class="btn btn-warning"
+                        context="{'active_model': 'project.task', 'active_id': active_id, 'reschedule_task_id': active_id, 'state': 'schedule'}"/>
+
                 <button name="%(cpe_assets.activation_wizard_entry_v2)d"
                         type="action"
                         string="Activate Internet"
@@ -42,6 +45,7 @@
                         class="btn btn-primary"
                         invisible="not fsm_requires_fiber_install"
                         context="{'active_model': 'project.task', 'active_ids': [active_id], 'from_task': True}"/>
+
                 <button name="action_activate_iptv_from_task"
                         type="object"
                         string="Activate IPTV"
@@ -49,7 +53,7 @@
                         class="btn btn-primary"
                         invisible="not fsm_requires_iptv_install"/>
             </xpath>
-            
+
             <xpath expr="//sheet" position="inside">
                 <field name="fsm_planned_hours_warning" invisible="1"/>
                 <field name="fsm_default_planned_hours" invisible="1"/>
@@ -59,6 +63,7 @@
                     <field name="fsm_planned_hours_warning_text" nolabel="1" readonly="1"/>
                 </div>
             </xpath>
+
             <xpath expr="//notebook" position="inside">
                 <page string="Materials/Services">
                     <field name="fsm_material_ids" nolabel="1">
@@ -71,7 +76,7 @@
                         </tree>
                     </field>
                 </page>
-                <!-- Ensure control field is in the view for modifier evaluation -->
+
                 <field name="fsm_requires_fiber_install" invisible="1"/>
                 <page string="Fiber Install" invisible="not fsm_requires_fiber_install">
                     <group>
@@ -128,69 +133,122 @@
                         <field name="fsm_install_complete" readonly="1"/>
                     </group>
                 </page>
-                
-                <!-- Cabal TV page for IPTV install tasks -->
-                <page name="iptv_task_page" string="Cabal TV" 
-                      invisible="not fsm_requires_iptv_install">
-                  
-                  <group string="Subscription Service">
-                    <field name="sale_order_id" readonly="1"/>
-                    <field name="iptv_service_id" readonly="1"/>
-                    <field name="iptv_status" readonly="1"/>
-                  </group>
-                  
-                  <group string="Actions">
-                    <button name="action_refresh_iptv_from_subscription"
-                            string="Refresh from Subscription"
-                            type="object"
-                            class="oe_highlight"
-                            icon="fa-refresh"/>
-                  </group>
-                  
-                  <group string="STBs">
-                    <field name="iptv_max_sessions" readonly="1"/>
-                    <field name="iptv_can_add_stb" invisible="1"/>
 
-                    <!-- Editable STB list -->
-                    <field name="iptv_stb_ids"
-                          context="{'default_order_id': sale_order_id}"
-                          mode="tree,form"
-                          invisible="not iptv_can_add_stb">
-                      <tree editable="bottom" delete="1">
-                        <field name="mac"/>
-                        <field name="status"/>
-                        <field name="backend_stb_id" readonly="1"/>
-                        <field name="last_connection" readonly="1"/>
-                        <field name="notes"/>
-                      </tree>
-                      <form>
-                        <group>
-                          <field name="mac"/>
-                          <field name="status"/>
-                          <field name="backend_stb_id" readonly="1"/>
-                          <field name="last_connection" readonly="1"/>
-                          <field name="notes"/>
-                        </group>
-                      </form>
-                    </field>
+                <page name="iptv_task_page" string="Cabal TV" invisible="not fsm_requires_iptv_install">
+                    <group string="Subscription Service">
+                        <field name="sale_order_id" readonly="1"/>
+                        <field name="iptv_service_id" readonly="1"/>
+                        <field name="iptv_status" readonly="1"/>
+                    </group>
 
-                    <!-- Read-only STB list (max sessions reached) -->
-                    <field name="iptv_stb_ids"
-                          context="{'default_order_id': sale_order_id}"
-                          mode="tree,form"
-                          invisible="iptv_can_add_stb">
-                      <tree editable="bottom" create="0" delete="1">
-                        <field name="mac"/>
-                        <field name="status"/>
-                        <field name="backend_stb_id" readonly="1"/>
-                        <field name="last_connection" readonly="1"/>
-                        <field name="notes"/>
-                      </tree>
-                    </field>
-                  </group>
+                    <group string="Actions">
+                        <button name="action_refresh_iptv_from_subscription"
+                                string="Refresh from Subscription"
+                                type="object"
+                                class="oe_highlight"
+                                icon="fa-refresh"/>
+                    </group>
+
+                    <group string="STBs">
+                        <field name="iptv_max_sessions" readonly="1"/>
+                        <field name="iptv_can_add_stb" invisible="1"/>
+
+                        <field name="iptv_stb_ids"
+                               context="{'default_order_id': sale_order_id}"
+                               mode="tree,form"
+                               invisible="not iptv_can_add_stb">
+                            <tree editable="bottom" delete="1">
+                                <field name="mac"/>
+                                <field name="status"/>
+                                <field name="backend_stb_id" readonly="1"/>
+                                <field name="last_connection" readonly="1"/>
+                                <field name="notes"/>
+                            </tree>
+                            <form>
+                                <group>
+                                    <field name="mac"/>
+                                    <field name="status"/>
+                                    <field name="backend_stb_id" readonly="1"/>
+                                    <field name="last_connection" readonly="1"/>
+                                    <field name="notes"/>
+                                </group>
+                            </form>
+                        </field>
+
+                        <field name="iptv_stb_ids"
+                               context="{'default_order_id': sale_order_id}"
+                               mode="tree,form"
+                               invisible="iptv_can_add_stb">
+                            <tree editable="bottom" create="0" delete="1">
+                                <field name="mac"/>
+                                <field name="status"/>
+                                <field name="backend_stb_id" readonly="1"/>
+                                <field name="last_connection" readonly="1"/>
+                                <field name="notes"/>
+                            </tree>
+                        </field>
+                    </group>
                 </page>
             </xpath>
         </field>
     </record>
+
+    <!-- Pivot report: tasks by assignee and task type (Odoo 17 safe: use __count only) -->
+    <record id="view_project_task_pivot_fsm_assignee_type" model="ir.ui.view">
+        <field name="name">project.task.pivot.fsm.assignee.type</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <pivot string="FSM Tasks by Assignee and Type">
+                <field name="user_ids" type="row"/>
+                <field name="fsm_task_type_id" type="col"/>
+                <field name="planned_date_begin" type="row" interval="month"/>
+                <field name="fsm_task_count" type="measure" string="Tasks"/>
+<!--                <field name="id" type="measure" string="Tasks" operator="count"/>  -->
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Search view -->
+    <record id="view_project_task_search_fsm_assignee_type" model="ir.ui.view">
+        <field name="name">project.task.search.fsm.assignee.type</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <search string="FSM Tasks">
+                <filter name="is_fsm" string="Field Service" domain="[('is_fsm', '=', True)]"/>
+                <field name="user_ids" string="Assignee"/>
+                <field name="fsm_task_type_id" string="Task Type"/>
+                <field name="stage_id" string="Status"/>
+                <filter name="planned_date_begin" string="Scheduled Date" date="planned_date_begin"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_user" string="Assignee" context="{'group_by': 'user_ids'}"/>
+                    <filter name="group_type" string="Task Type" context="{'group_by': 'fsm_task_type_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action and menu (force __count) -->
+    <record id="action_fsm_task_assignee_type_report" model="ir.actions.act_window">
+        <field name="name">Tasks by Assignee and Type</field>
+        <field name="res_model">project.task</field>
+        <field name="view_mode">pivot,graph,tree</field>
+        <field name="domain">[("is_fsm", "=", True)]</field>
+        <field name="context">{
+            'search_default_is_fsm': 1,
+            'search_default_group_user': 1,
+            'search_default_group_type': 1,
+            'pivot_measures': ['fsm_task_count']
+        }</field>
+        <field name="search_view_id" ref="view_project_task_search_fsm_assignee_type"/>
+        <field name="view_id" ref="view_project_task_pivot_fsm_assignee_type"/>
+        <field name="views" eval="[(ref('view_project_task_pivot_fsm_assignee_type'), 'pivot'), (False, 'graph'), (False, 'tree')]"/>
+    </record>
+
+    <menuitem id="menu_fsm_task_report_assignee_type"
+              name="Tasks by Assignee/Type"
+              parent="industry_fsm.fsm_menu_root"
+              action="action_fsm_task_assignee_type_report"
+              sequence="80"
+              groups="industry_fsm.group_fsm_user"/>
 
 </odoo>

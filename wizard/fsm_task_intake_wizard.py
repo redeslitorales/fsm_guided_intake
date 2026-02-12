@@ -528,17 +528,16 @@ class FsmTaskIntakeWizard(models.TransientModel):
             attendances = calendar.attendance_ids.filtered(lambda a: not a.display_type)
             if not attendances:
                 continue
-            # Preload existing bookings for the window to avoid overlaps
             team_ids_for_lead = lead_to_team_ids.get(team.lead_user_id.id, [team.id])
-            booking_domain = [
+            # Respect existing bookings for the lead/team (exclude cancelled and the task being rescheduled)
+            existing_bookings = self.env["fsm.booking"].search([
                 ("team_id", "in", team_ids_for_lead),
                 ("state", "!=", "cancelled"),
                 ("start_datetime", "<", search_end_utc),
                 ("end_datetime", ">", search_start_utc),
-            ]
+            ])
             if reschedule_task_id:
-                booking_domain.append(("task_id", "!=", reschedule_task_id))
-            existing_bookings = self.env["fsm.booking"].search(booking_domain)
+                existing_bookings = existing_bookings.filtered(lambda b: b.task_id.id != reschedule_task_id)
             # Also consider tasks with planned dates for this team (if any)
             task_intervals = []
             Task = self.env["project.task"]

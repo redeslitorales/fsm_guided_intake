@@ -140,6 +140,13 @@ class ProjectTask(models.Model):
         readonly=True,
         store=False
     )
+    
+    fsm_task_count = fields.Integer(
+        string="Tasks",
+        default=1,
+        aggregator="sum",
+        readonly=True,
+    )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -277,6 +284,27 @@ class ProjectTask(models.Model):
                     "product_id": ml.product_id.id,
                     "product_uom_qty": ml.product_uom_qty,
                 })
+            if task.fsm_cat6_installed:
+                config = self.env["ir.config_parameter"].sudo()
+                cat6_map = [
+                    ("fsm_guided_intake.cat6_cable_product_id", task.fsm_cat6_meters),
+                    ("fsm_guided_intake.cat6_rj45_product_id", task.fsm_cat6_rj45),
+                    ("fsm_guided_intake.cat6_wall_jack_product_id", task.fsm_cat6_wall_jacks),
+                ]
+                for param_key, qty in cat6_map:
+                    if not qty or qty <= 0:
+                        continue
+                    product_id = int(config.get_param(param_key, "0") or "0")
+                    if not product_id:
+                        continue
+                    product = self.env["product.product"].browse(product_id)
+                    if not product.exists():
+                        continue
+                    self.env["sale.order.line"].create({
+                        "order_id": so.id,
+                        "product_id": product.id,
+                        "product_uom_qty": qty,
+                    })
         return True
 
     def write(self, vals):

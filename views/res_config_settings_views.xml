@@ -29,6 +29,20 @@
                             <field name="installation_task_type_id" placeholder="Select Task Type..."/>
                         </setting>
                     </block>
+                    <block title="Cat6 Billing">
+                        <setting string="Cat6 cable product"
+                                 help="Product used when billing Cat6 cable meters captured on a task.">
+                            <field name="fsm_cat6_cable_product_id" placeholder="Select product..."/>
+                        </setting>
+                        <setting string="RJ45 connector product"
+                                 help="Product used when billing RJ45 connector counts captured on a task.">
+                            <field name="fsm_cat6_rj45_product_id" placeholder="Select product..."/>
+                        </setting>
+                        <setting string="Wall jack product"
+                                 help="Product used when billing wall jack counts captured on a task.">
+                            <field name="fsm_cat6_wall_jack_product_id" placeholder="Select product..."/>
+                        </setting>
+                    </block>
                 </app>
             </xpath>
         </field>

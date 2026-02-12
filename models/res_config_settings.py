@@ -27,3 +27,21 @@ class ResConfigSettings(models.TransientModel):
         config_parameter="fsm_guided_intake.installation_task_type_id",
         help="Tasks of this type will automatically link to the subscription's installation_task_id field.",
     )
+    fsm_cat6_cable_product_id = fields.Many2one(
+        "product.product",
+        string="Cat6 Cable Product",
+        config_parameter="fsm_guided_intake.cat6_cable_product_id",
+        help="Product to bill per meter when Cat6 cable meters are captured on a task.",
+    )
+    fsm_cat6_rj45_product_id = fields.Many2one(
+        "product.product",
+        string="RJ45 Connector Product",
+        config_parameter="fsm_guided_intake.cat6_rj45_product_id",
+        help="Product to bill per connector when RJ45 counts are captured on a task.",
+    )
+    fsm_cat6_wall_jack_product_id = fields.Many2one(
+        "product.product",
+        string="Wall Jack Product",
+        config_parameter="fsm_guided_intake.cat6_wall_jack_product_id",
+        help="Product to bill per unit when wall jacks are captured on a task.",
+    )

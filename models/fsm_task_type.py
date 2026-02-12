@@ -34,6 +34,11 @@ class FsmTaskType(models.Model):
         help="Show this task type only when a customer/subscription is selected in the wizard.",
         default=False,
     )
+    is_installation = fields.Boolean(
+        string="Is Installation",
+        help="Indicates this task type represents an installation activity.",
+        default=False,
+    )
     may_be_rescheduled = fields.Boolean(
         string="May Be Rescheduled",
         help="Indicates this task type can be rescheduled without extra approval.",

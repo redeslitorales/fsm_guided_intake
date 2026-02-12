@@ -8,6 +8,7 @@
                 <field name="name"/>
                 <field name="project_id"/>
                 <field name="default_planned_hours"/>
+                <field name="is_installation"/>
                 <field name="requires_products"/>
                 <field name="requires_serials"/>
                 <field name="requires_signature"/>
@@ -51,6 +52,7 @@
                         <field name="never_has_product"/>
                         <field name="include_in_wizard"/>
                         <field name="is_client_task"/>
+                        <field name="is_installation"/>
                         <field name="requires_fiber_install"/>
                         <field name="requires_iptv_install"/>
                         <field name="product_category_ids" widget="many2many_tags"/>
