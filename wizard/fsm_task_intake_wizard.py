@@ -889,6 +889,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "description": self.notes or "",
             "fsm_service_address_id": (self.service_address_id.id if self.service_address_id else False),
             "fsm_service_zone_name": self._get_service_zone_name(),
+            "team_id": team.id,
         }
         if self.task_type_id.default_pon_type and "fsm_pon_type" in self.env["project.task"]._fields:
             task_vals["fsm_pon_type"] = self.task_type_id.default_pon_type
@@ -947,6 +948,9 @@ class FsmTaskIntakeWizard(models.TransientModel):
             task = self.env["project.task"].with_context(create_ctx).create(task_vals)
         except Exception as e:
             raise UserError(_("Task creation failed: %s\nDebug payload: %s") % (e, debug_payload))
+
+        # Reuse model helper to move the task into the scheduled stage based on planned start
+        task._fsm_apply_scheduled_stage()
 
         # Materials
         for l in self.line_ids:

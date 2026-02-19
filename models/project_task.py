@@ -31,6 +31,7 @@ class ProjectTask(models.Model):
     fsm_service_address_id = fields.Many2one("res.partner", string="Service Address", copy=False)
     fsm_service_zone_name = fields.Char(string="Service Zone", copy=False)
     fsm_booking_id = fields.Many2one("fsm.booking", string="Booking", copy=False)
+    team_id = fields.Many2one("fsm.team", string="FSM Team", copy=False, help="Assigned field service team")
     fsm_material_ids = fields.One2many("fsm.task.material", "task_id", string="Materials/Services", copy=False)
     fsm_invoiced = fields.Boolean(string="FSM Invoiced", default=False, copy=False)
     fsm_last_invoiced_so_id = fields.Many2one("sale.order", string="Last Invoiced SO", copy=False)
@@ -148,6 +149,79 @@ class ProjectTask(models.Model):
         readonly=True,
     )
 
+    # --- Stage helpers -------------------------------------------------
+    def _fsm_find_stage(self, names):
+        """Find a stage by name (case-insensitive), preferring the task's project.
+
+        The lookup tries each candidate name with the project filter first, then
+        without project restriction as a fallback.
+        """
+        Stage = self.env["project.task.type"]
+        for name in names:
+            domain = [("name", "ilike", name)]
+            if self.project_id:
+                domain = [("project_ids", "in", self.project_id.id)] + domain
+            stage = Stage.search(domain, limit=1)
+            if stage:
+                return stage
+        for name in names:
+            stage = Stage.search([("name", "ilike", name)], limit=1)
+            if stage:
+                return stage
+        return False
+
+    def _fsm_apply_unscheduled_stage(self):
+        """Move tasks without a planned start to the unscheduled stage.
+
+        Uses common stage labels to avoid hard-coded IDs. Skips folded stages to
+        avoid re-opening done tasks.
+        """
+        unscheduled_candidates = ["to be scheduled", "to schedule", "new"]
+        for task in self:
+            if task.planned_date_begin:
+                continue
+            if task.stage_id and task.stage_id.fold:
+                continue
+            stage = task._fsm_find_stage(unscheduled_candidates)
+            if stage and task.stage_id != stage:
+                task.with_context(fsm_skip_auto_stage=True).write({"stage_id": stage.id})
+
+    def _fsm_apply_scheduled_stage(self):
+        """Move tasks with a planned date to the scheduled stage.
+
+        Uses common stage labels to avoid hard-coded IDs. Skips folded stages to
+        avoid moving already closed tasks.
+        """
+        # Include common Spanish labels so scheduling works across translations
+        scheduled_candidates = [
+            "scheduled",
+            "planned",
+            "planificado",
+            "programado",
+            "agendado",
+        ]
+        for task in self:
+            has_schedule = bool(task.planned_date_begin or task.date_deadline)
+            if not has_schedule:
+                continue
+            if task.stage_id and task.stage_id.fold:
+                continue
+            stage = task._fsm_find_stage(scheduled_candidates)
+            if stage and task.stage_id != stage:
+                task.with_context(fsm_skip_auto_stage=True).write({"stage_id": stage.id})
+
+    def _fsm_stage_is_done(self, stage):
+        """Return True when a stage represents a done/closed state."""
+        if not stage:
+            return False
+        if stage.fold:
+            return True
+        if "is_closed" in stage._fields and stage.is_closed:
+            return True
+        if "closed" in stage._fields and stage.closed:
+            return True
+        return False
+
     @api.model_create_multi
     def create(self, vals_list):
         """Override create to auto-link installation tasks to subscriptions."""
@@ -254,6 +328,12 @@ class ProjectTask(models.Model):
         tasks = super().create(vals)
         if "planned_hours" in vals or "fsm_default_planned_hours" in vals:
             tasks._compute_planned_hours_warning()
+        if not self.env.context.get("fsm_skip_auto_stage"):
+            for task in tasks:
+                if task.planned_date_begin:
+                    task._fsm_apply_scheduled_stage()
+                else:
+                    task._fsm_apply_unscheduled_stage()
         return tasks
 
     def write(self, vals):
@@ -308,6 +388,11 @@ class ProjectTask(models.Model):
         return True
 
     def write(self, vals):
+        skip_auto_stage = self.env.context.get("fsm_skip_auto_stage")
+        planned_date_in_vals = "planned_date_begin" in vals
+        planned_date_value = vals.get("planned_date_begin")
+        stage_change_requested = False
+        new_stage = False
         if "stage_id" in vals:
             new_stage = self.env["project.task.type"].browse(vals["stage_id"])
             if new_stage and new_stage.fold:
@@ -316,6 +401,12 @@ class ProjectTask(models.Model):
                         raise ValidationError(_(
                             "Cannot mark this task as done until the install worksheet is complete and optical levels are in range."
                         ))
+            stage_change_requested = any(task.stage_id.id != vals["stage_id"] for task in self)
+        if "fsm_done" in self._fields and vals.get("fsm_done"):
+            for task in self:
+                target_stage = new_stage or task.stage_id
+                if not task._fsm_stage_is_done(target_stage):
+                    raise ValidationError(_("Move the task to a Done stage before marking it done."))
         res = super().write(vals)
         if "stage_id" in vals:
             auto = self.env["ir.config_parameter"].sudo().get_param("fsm_guided_intake.auto_invoice_on_stage_done", default="False")
@@ -328,6 +419,14 @@ class ProjectTask(models.Model):
                         # Only invoice once, and only if there are materials/services
                         if task.fsm_material_ids:
                             task._fsm_create_draft_invoice()
+        if not skip_auto_stage and not stage_change_requested:
+            if planned_date_in_vals or "date_deadline" in vals:
+                unscheduled_stage = self._fsm_find_stage(["to be scheduled", "to schedule", "new"])
+                to_schedule = self.filtered(lambda t: unscheduled_stage and t.stage_id == unscheduled_stage and (t.planned_date_begin or t.date_deadline))
+                if to_schedule:
+                    to_schedule._fsm_apply_scheduled_stage()
+            elif planned_date_in_vals and not planned_date_value:
+                self._fsm_apply_unscheduled_stage()
         return res
 
     @api.model
@@ -382,50 +481,39 @@ class ProjectTask(models.Model):
         if not assignee_user_ids and self.user_ids:
             assignee_user_ids = self.user_ids.ids
 
-        # New task payload
-        new_task_vals = {
-            "name": self.name,
-            "partner_id": self.partner_id.id if self.partner_id else False,
-            "project_id": self.project_id.id if self.project_id else False,
-            "fsm_task_type_id": self.fsm_task_type_id.id if self.fsm_task_type_id else False,
+        rescheduled_stage = self._fsm_find_stage(["rescheduled"])
+
+        write_vals = {
             "description": (self.description or "") + note_text,
-            "sale_order_id": self.sale_order_id.id if self.sale_order_id else False,
-            "sale_line_id": self.sale_line_id.id if hasattr(self, "sale_line_id") and self.sale_line_id else False,
-            "tag_ids": [(6, 0, self.tag_ids.ids)] if self.tag_ids else False,
-            "fsm_service_address_id": self.fsm_service_address_id.id if self.fsm_service_address_id else False,
             "fsm_service_zone_name": self.fsm_service_zone_name,
             "planned_date_begin": start_dt_utc,
         }
 
         if "planned_date_end" in self._fields:
-            new_task_vals["planned_date_end"] = end_dt_utc
+            write_vals["planned_date_end"] = end_dt_utc
         if "planned_hours" in self._fields:
-            new_task_vals["planned_hours"] = duration_hours
-            new_task_vals["fsm_default_planned_hours"] = self.fsm_default_planned_hours or duration_hours
+            write_vals["planned_hours"] = duration_hours
+            write_vals["fsm_default_planned_hours"] = self.fsm_default_planned_hours or duration_hours
         if "date_start" in self._fields:
-            new_task_vals["date_start"] = start_dt_utc
+            write_vals["date_start"] = start_dt_utc
         if "date_end" in self._fields:
-            new_task_vals["date_end"] = end_dt_utc
+            write_vals["date_end"] = end_dt_utc
         if "date_deadline" in self._fields and end_dt_utc:
             deadline_dt = end_dt_utc
             if isinstance(deadline_dt, datetime) and deadline_dt.time() != time.min:
                 deadline_dt = deadline_dt + timedelta(days=1)
-            new_task_vals["date_deadline"] = fields.Date.to_date(deadline_dt)
-        if self.stage_id:
-            new_task_vals["stage_id"] = self.stage_id.id
+            write_vals["date_deadline"] = fields.Date.to_date(deadline_dt)
+        if rescheduled_stage:
+            write_vals["stage_id"] = rescheduled_stage.id
         if "team_id" in self._fields and team:
-            new_task_vals["team_id"] = team.id
+            write_vals["team_id"] = team.id
         if assignee_user_ids and "user_ids" in self._fields:
-            new_task_vals["user_ids"] = [(6, 0, assignee_user_ids)]
+            write_vals["user_ids"] = [(6, 0, assignee_user_ids)]
 
-        new_task = self.sudo().create(new_task_vals)
-
-        # Move booking forward (reuse to keep delivery order linked) or create a new one
-        booking = False
-        if self.fsm_booking_id:
-            booking = self.fsm_booking_id.sudo()
+        # Update booking in place to preserve delivery links
+        booking = self.fsm_booking_id.sudo() if self.fsm_booking_id else False
+        if booking:
             booking.write({
-                "task_id": new_task.id,
                 "team_id": team.id if team else booking.team_id.id,
                 "start_datetime": start_dt_utc,
                 "end_datetime": end_dt_utc,
@@ -437,7 +525,7 @@ class ProjectTask(models.Model):
             booking_ctx.pop("default_state", None)
             booking_ctx.pop("state", None)
             booking = self.env["fsm.booking"].with_context(booking_ctx).sudo().create({
-                "task_id": new_task.id,
+                "task_id": self.id,
                 "team_id": team.id,
                 "start_datetime": start_dt_utc,
                 "end_datetime": end_dt_utc,
@@ -445,32 +533,17 @@ class ProjectTask(models.Model):
                 "state": "confirmed",
             })
         if booking:
-            new_task.fsm_booking_id = booking.id
+            write_vals["fsm_booking_id"] = booking.id
             booking.with_context(self.env.context).action_create_or_update_delivery()
 
-        # Move materials so invoicing/pickings follow the active task
-        if self.fsm_material_ids:
-            self.fsm_material_ids.sudo().write({"task_id": new_task.id})
+        self.with_context(fsm_skip_auto_stage=True).sudo().write(write_vals)
 
-        # Archive the old task
-        archive_note = note_text + _("\n\n=== ARCHIVED - Rescheduled to new task %s ===\n") % new_task.id
-        self.sudo().write({
-            "active": False,
-            "fsm_booking_id": False,
-            "description": (self.description or "") + archive_note,
-        })
-
-        # Audit messages
-        new_task.message_post(
-            body=_("This task was created by rescheduling task #%s. The original task has been archived.") % self.id,
-            message_type="comment",
-        )
         self.message_post(
-            body=_("This task was archived and rescheduled as task #%s.") % new_task.id,
+            body=_("This task was rescheduled. Previous time: %s, New time: %s") % (old_start_str, new_start_str),
             message_type="comment",
         )
 
-        return new_task
+        return self
 
     def send_whatsapp(self):
         """Stub method to satisfy enterprise FSM view validation.

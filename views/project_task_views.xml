@@ -32,18 +32,19 @@
                 <field name="fsm_requires_iptv_install" invisible="1"/>
 
                 <button name="%(fsm_guided_intake.action_fsm_task_intake_wizard)d"
-                        type="action"
-                        string="Change Appointment"
-                        icon="fa-calendar"
-                        class="btn btn-warning"
-                        context="{'active_model': 'project.task', 'active_id': active_id, 'reschedule_task_id': active_id, 'state': 'schedule'}"/>
+                    type="action"
+                    string="Change Appointment"
+                    icon="fa-calendar"
+                    class="btn btn-warning"
+                    invisible="stage_id not in [427, 263]"
+                    context="{'active_model': 'project.task', 'active_id': active_id, 'reschedule_task_id': active_id, 'state': 'schedule'}"/>
 
                 <button name="%(cpe_assets.activation_wizard_entry_v2)d"
                     type="action"
                     string="Activate Internet"
                     icon="fa-globe"
                     class="btn btn-primary"
-                    modifiers="{'invisible': ['|', ('fsm_requires_fiber_install', '=', False), ('sale_order_id.internet_service_state', '=', 'active')]}"
+                    invisible="fsm_requires_fiber_install == False or sale_order_id.internet_service_state in ['active', 'Active']"
                     context="{'active_model': 'project.task', 'active_ids': [active_id], 'from_task': True}"/>
 
                 <button name="action_activate_iptv_from_task"
@@ -52,6 +53,10 @@
                         icon="fa-tv"
                         class="btn btn-primary"
                         invisible="not fsm_requires_iptv_install"/>
+            </xpath>
+
+            <xpath expr="//field[@name='user_ids']" position="after">
+                <field name="team_id"/>
             </xpath>
 
             <xpath expr="//sheet" position="inside">
