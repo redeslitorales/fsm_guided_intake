@@ -4,11 +4,15 @@ from odoo.exceptions import UserError, ValidationError
 from datetime import datetime, timedelta, time
 import pytz
 import math
+import logging
 
 def float_hours_to_hm(hours_float):
     h = int(hours_float)
     m = int(round((hours_float - h) * 60))
     return h, m
+
+
+_logger = logging.getLogger(__name__)
 
 class FsmTaskIntakeWizardLine(models.TransientModel):
     _name = "fsm.task.intake.wizard.line"
@@ -479,19 +483,10 @@ class FsmTaskIntakeWizard(models.TransientModel):
         }
 
     def _find_top_slots(self, start_dt, limit=3, date_end=None, time_start=None, time_end=None):
-        """
-        Return a list of top available slots sorted by start time.
-        Each slot is a dict: {"start": datetime, "end": datetime, "team": fsm.team}.
-        Availability is based on the team calendar (team.calendar_id or lead's calendar)
-        and constrained by the team lead's bookings (across all teams that share the same lead).
-        """
         self.ensure_one()
         needed_hours = self._get_duration_hours()
-        buffer_before = timedelta(minutes=(self.buffer_before_mins or 0))
-        buffer_after = timedelta(minutes=(self.buffer_after_mins or 0))
         reschedule_task_id = self.reschedule_task_id.id or self.env.context.get("reschedule_task_id")
 
-        # If a team is selected, prioritize it but still include all qualified teams
         if self.team_id:
             teams = self.team_id | self.qualified_team_ids
         else:
@@ -499,150 +494,23 @@ class FsmTaskIntakeWizard(models.TransientModel):
         if not teams:
             teams = self.env["fsm.team"].search([("active", "=", True)])
 
-        slots = []
-        # Scan a few days ahead
-        search_end = date_end or (start_dt + timedelta(days=14))
-        # Convert search window to UTC to match stored booking datetimes
-        search_start_utc = self._to_utc(start_dt)
-        search_end_utc = self._to_utc(search_end)
-        lead_minutes = int(self.env["ir.config_parameter"].sudo().get_param("fsm_guided_intake.slot_start_lead_minutes", "0") or 0)
+        lead_minutes = int(self.env["ir.config_parameter"].sudo().get_param(
+            "fsm_guided_intake.slot_start_lead_minutes", "0"
+        ) or 0)
 
-        # Precompute team sets per lead to check lead availability across teams
-        lead_to_team_ids = {}
-        leads = teams.mapped("lead_user_id").filtered(lambda u: u)
-        if leads:
-            all_lead_teams = self.env["fsm.team"].search([("lead_user_id", "in", leads.ids)])
-            for lead in leads:
-                lead_to_team_ids[lead.id] = all_lead_teams.filtered(lambda t: t.lead_user_id.id == lead.id).ids
-
-        for team in teams:
-            # Prefer team calendar, fallback to lead calendar, then company/default calendar
-            calendar = (
-                team.calendar_id
-                or getattr(team.lead_user_id, "resource_calendar_id", False)
-                or self.env.company.resource_calendar_id
-                or self.env.ref("resource.resource_calendar_std", raise_if_not=False)
-            )
-            if not calendar:
-                continue
-            attendances = calendar.attendance_ids.filtered(lambda a: not a.display_type)
-            if not attendances:
-                continue
-            team_ids_for_lead = lead_to_team_ids.get(team.lead_user_id.id, [team.id])
-            # Respect existing bookings for the lead/team (exclude cancelled and the task being rescheduled)
-            existing_bookings = self.env["fsm.booking"].search([
-                ("team_id", "in", team_ids_for_lead),
-                ("state", "!=", "cancelled"),
-                ("start_datetime", "<", search_end_utc),
-                ("end_datetime", ">", search_start_utc),
-            ])
-            if reschedule_task_id:
-                existing_bookings = existing_bookings.filtered(lambda b: b.task_id.id != reschedule_task_id)
-            # Also consider tasks with planned dates for this team (if any)
-            task_intervals = []
-            Task = self.env["project.task"]
-            if "team_id" in Task._fields:
-                task_domain = [("team_id", "in", team_ids_for_lead), ("stage_id.fold", "=", False)]
-                if reschedule_task_id:
-                    task_domain.append(("id", "!=", reschedule_task_id))
-                if "planned_date_begin" in Task._fields and "planned_date_end" in Task._fields:
-                    task_domain += [
-                        ("planned_date_begin", "<", search_end_utc),
-                        ("planned_date_end", ">", search_start_utc),
-                    ]
-                elif "date_start" in Task._fields and "date_end" in Task._fields:
-                    task_domain += [
-                        ("date_start", "<", search_end_utc),
-                        ("date_end", ">", search_start_utc),
-                    ]
-                tasks = Task.search(task_domain)
-                for t in tasks:
-                    start = getattr(t, "planned_date_begin", False) or getattr(t, "date_start", False)
-                    end = getattr(t, "planned_date_end", False) or getattr(t, "date_end", False)
-                    if start and end:
-                        task_intervals.append((start, end))
-            # Loop through days
-            current_day = start_dt.date()
-            while datetime.combine(current_day, time.min) < search_end:
-                if self.filter_use_date and self.date_filter_start and current_day < self.date_filter_start:
-                    current_day += timedelta(days=1)
-                    continue
-                if self.filter_use_date and self.date_filter_end and current_day > self.date_filter_end:
-                    break
-                weekday_str = str(current_day.weekday())
-                day_attendances = attendances.filtered(lambda a: a.dayofweek == weekday_str)
-                if day_attendances:
-                    earliest = min(day_attendances.mapped("hour_from"))
-                    latest = max(day_attendances.mapped("hour_to"))
-
-                    effective_start = earliest
-                    effective_end = latest
-                    if time_start is not None:
-                        effective_start = max(effective_start, time_start)
-                    if time_end is not None:
-                        effective_end = min(effective_end, time_end)
-                    start_hour, start_min = float_hours_to_hm(effective_start)
-                    end_candidate = effective_end
-                    end_hour, end_min = float_hours_to_hm(end_candidate)
-                    shift_start_dt = datetime.combine(current_day, time(start_hour, start_min)) + timedelta(minutes=lead_minutes)
-                    shift_end_dt = datetime.combine(current_day, time(end_hour, end_min)) + timedelta(hours=1)
-
-                    if shift_end_dt <= shift_start_dt:
-                        current_day += timedelta(days=1)
-                        continue
-
-                    if shift_start_dt < start_dt:
-                        shift_start_dt = start_dt
-
-                    # Generate multiple candidate slots across the day window
-                    cursor = shift_start_dt
-                    step = timedelta(minutes=30)
-                    while cursor + timedelta(hours=needed_hours) + buffer_before + buffer_after <= shift_end_dt:
-                        slot_start = cursor + buffer_before
-                        slot_end = slot_start + timedelta(hours=needed_hours) + buffer_after
-
-                        slot_start_utc = self._to_utc(slot_start)
-                        slot_end_utc = self._to_utc(slot_end)
-                        overlap = existing_bookings.filtered(
-                            lambda b: b.start_datetime < slot_end_utc and b.end_datetime > slot_start_utc
-                        )
-                        if not overlap and task_intervals:
-                            for start_dt, end_dt in task_intervals:
-                                if start_dt < slot_end_utc and end_dt > slot_start_utc:
-                                    overlap = True
-                                    break
-
-                        # Filter: Only show slots in the future for today (timezone aware, force UTC-6 if unset)
-                        import pytz
-                        tz_name = self.env.context.get("tz") or self.env.user.tz or "America/El_Salvador"
-                        tz = pytz.timezone(tz_name)
-                        now_utc = fields.Datetime.now()
-                        slot_start_utc = slot_start if slot_start.tzinfo else slot_start.replace(tzinfo=None)
-                        now_tz = pytz.UTC.localize(now_utc).astimezone(tz)
-                        slot_start_tz = pytz.UTC.localize(slot_start_utc).astimezone(tz)
-                        # If slot is today, allow if slot is at or after now (>=)
-                        if slot_start_tz.date() == now_tz.date():
-                            if slot_start_tz >= now_tz:
-                                if not overlap:
-                                    slots.append({
-                                        "start": slot_start,
-                                        "end": slot_end,
-                                        "team": team,
-                                    })
-                        else:
-                            if not overlap:
-                                slots.append({
-                                    "start": slot_start,
-                                    "end": slot_end,
-                                    "team": team,
-                                })
-                        cursor += step
-
-                current_day += timedelta(days=1)
-        
-        # Sort by start time
-        slots.sort(key=lambda s: s["start"])
-        return slots[:limit]
+        return self.env["fsm.slot.engine"].compute_top_slots(
+            teams=teams,
+            start_dt_local=start_dt,
+            needed_hours=needed_hours,
+            limit=limit,
+            date_end_local=date_end,
+            time_start=time_start,
+            time_end=time_end,
+            exclude_task_id=reschedule_task_id,
+            buffer_before_mins=self.buffer_before_mins or 0,
+            buffer_after_mins=self.buffer_after_mins or 0,
+            lead_minutes=lead_minutes,
+        )
 
     @api.depends("task_type_id", "partner_id", "planned_hours", "slot_index", "search_start_dt", "date_filter_start", "date_filter_end", "time_filter_start", "time_filter_end", "filter_use_date", "filter_use_time")
     def _compute_slots(self):
@@ -675,9 +543,9 @@ class FsmTaskIntakeWizard(models.TransientModel):
             if wiz.filter_use_date and wiz.date_filter_start:
                 start_dt = datetime.combine(wiz.date_filter_start, time.min)
             search_end = datetime.combine(wiz.date_filter_end, time.max) if (wiz.filter_use_date and wiz.date_filter_end) else None
-            # Scan forward in 2-hour increments (up to ~7 days) until we find slots.
+            # Scan forward in 2-hour increments (up to ~30 days) until we find slots.
             slots = []
-            max_attempts = 84  # 2-hour steps for 7 days
+            max_attempts = 360  # 2-hour steps for 30 days
             for attempt in range(max_attempts):
                 start_dt_attempt = start_dt + timedelta(hours=attempt * 2.0)
                 start_dt_attempt = wiz._round_to_nearest_10(start_dt_attempt)
@@ -829,9 +697,12 @@ class FsmTaskIntakeWizard(models.TransientModel):
 
     def action_more_options(self):
         self.ensure_one()
-        # Move search start forward based on last shown slots (or current time)
-        base = self.slot3_end or self.slot1_end or fields.Datetime.now()
-        self.search_start_dt = (base or fields.Datetime.now()) + timedelta(hours=2.0)
+        # Move search start forward based on last shown slots (or current time).
+        # If no slots are currently shown, jump a full day to avoid repeating the same window.
+        has_slots = bool(self.slot1_end or self.slot3_end)
+        base = self.slot3_end or self.slot1_end or self.search_start_dt or fields.Datetime.now()
+        increment = timedelta(hours=2.0 if has_slots else 24.0)
+        self.search_start_dt = (base or fields.Datetime.now()) + increment
         return {
             "type": "ir.actions.act_window",
             "res_model": "fsm.task.intake.wizard",

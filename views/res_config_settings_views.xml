@@ -22,6 +22,10 @@
                                  help="Minutes to add after shift start before offering the first slot (0 to allow right at shift start).">
                             <field name="fsm_slot_start_lead_minutes"/>
                         </setting>
+                        <setting string="Travel buffer minutes between jobs"
+                                 help="Minutes reserved before and after every scheduled task to allow travel time between jobs.">
+                            <field name="fsm_slot_travel_buffer_minutes"/>
+                        </setting>
                     </block>
                     <block title="Installation Tracking">
                         <setting string="Installation Task Type"

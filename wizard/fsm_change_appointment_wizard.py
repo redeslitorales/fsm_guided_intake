@@ -255,252 +255,34 @@ class FsmChangeAppointmentWizard(models.TransientModel):
         return stage_name in {"new", "planned"}
 
     def _find_top_slots(self, start_dt, limit=3, date_end=None, time_start=None, time_end=None):
-        """Find top available slots using team leaders' calendars and existing tasks."""
         self.ensure_one()
         needed_hours = self._get_duration_hours()
-        buffer_before = timedelta(minutes=(self.buffer_before_mins or 0))
-        buffer_after = timedelta(minutes=(self.buffer_after_mins or 0))
 
-        _logger.warning(
-            "[FSM SLOT DEBUG] start _find_top_slots task=%s start_dt=%s date_end=%s time_start=%s time_end=%s needed_hours=%s buffer_before=%s buffer_after=%s",
-            self.task_id.id if self.task_id else None,
-            start_dt,
-            date_end,
-            time_start,
-            time_end,
-            needed_hours,
-            buffer_before,
-            buffer_after,
-        )
-
-        # Eligible teams: preferred or capable for the task type (or explicitly selected team)
         if self.team_id:
             teams = self.team_id
         else:
             task_type = self.task_id.fsm_task_type_id if self.task_id else False
-            preferred = task_type.preferred_team_ids if task_type else self.env['fsm.team']
-            capable = task_type.capable_team_ids if task_type else self.env['fsm.team']
-            teams = (preferred | capable) if (preferred or capable) else self.env['fsm.team'].search([('active', '=', True)])
+            preferred = task_type.preferred_team_ids if task_type else self.env["fsm.team"]
+            capable = task_type.capable_team_ids if task_type else self.env["fsm.team"]
+            teams = (preferred | capable) if (preferred or capable) else self.env["fsm.team"].search([("active", "=", True)])
 
-        _logger.warning(
-            "[FSM SLOT DEBUG] eligible teams=%s",
-            [(t.id, t.name) for t in teams],
+        lead_minutes = int(self.env["ir.config_parameter"].sudo().get_param(
+            "fsm_guided_intake.slot_start_lead_minutes", "0"
+        ) or 0)
+
+        return self.env["fsm.slot.engine"].compute_top_slots(
+            teams=teams,
+            start_dt_local=start_dt,
+            needed_hours=needed_hours,
+            limit=limit,
+            date_end_local=date_end,
+            time_start=time_start,
+            time_end=time_end,
+            exclude_task_id=self.task_id.id if self.task_id else None,
+            buffer_before_mins=self.buffer_before_mins or 0,
+            buffer_after_mins=self.buffer_after_mins or 0,
+            lead_minutes=lead_minutes,
         )
-
-        leaders = teams.mapped('lead_user_id').filtered(lambda u: u)
-        if not leaders:
-            _logger.warning("[FSM SLOT DEBUG] no leaders found; returning empty slots")
-            return []
-
-        slots = []
-        search_end = date_end or (start_dt + timedelta(days=14))
-        search_start_utc = self._to_utc(start_dt)
-        search_end_utc = self._to_utc(search_end)
-        lead_minutes = int(self.env['ir.config_parameter'].sudo().get_param('fsm_guided_intake.slot_start_lead_minutes', '0') or 0)
-
-        _logger.warning(
-            "[FSM SLOT DEBUG] leaders=%s search_start_utc=%s search_end_utc=%s lead_minutes=%s",
-            [(l.id, l.name) for l in leaders],
-            search_start_utc,
-            search_end_utc,
-            lead_minutes,
-        )
-
-        Task = self.env['project.task']
-        start_field = 'planned_date_begin' if 'planned_date_begin' in Task._fields else ('date_start' if 'date_start' in Task._fields else False)
-        end_field = 'planned_date_end' if 'planned_date_end' in Task._fields else ('date_end' if 'date_end' in Task._fields else False)
-        alloc_field = 'allocated_hours' if 'allocated_hours' in Task._fields else False
-
-        # Map leader -> busy intervals (in local time) ordered descending by start
-        leader_busy = {}
-        for leader in leaders:
-            intervals = []
-            if start_field:
-                domain = [
-                    ('user_ids', 'in', leader.id),
-                    ('stage_id.fold', '=', False),
-                    (start_field, '<', search_end_utc),
-                ]
-                if end_field:
-                    domain += ['|', (end_field, '>', search_start_utc), (alloc_field, '!=', False) if alloc_field else (start_field, '>', search_start_utc)]
-                elif alloc_field:
-                    domain += [(alloc_field, '!=', False)]
-
-                tasks = Task.search(domain, order=f"{start_field} desc")
-                for t in tasks:
-                    start_raw = getattr(t, start_field, False)
-                    end_raw = getattr(t, end_field, False) if end_field else False
-                    fallback_hours = None
-                    fallback_source = "explicit_end"
-                    if not end_raw:
-                        # Fallback: use task type's default planned hours; if absent, default to 1 hour
-                        task_type_hours = 0.0
-                        try:
-                            task_type_hours = float(getattr(t.fsm_task_type_id, 'default_planned_hours', 0.0) or 0.0)
-                        except Exception:
-                            task_type_hours = 0.0
-                        fallback_hours = task_type_hours or 1.0
-                        fallback_source = "task_type_default" if task_type_hours else "default_1h"
-                        try:
-                            end_raw = start_raw + timedelta(hours=fallback_hours) if start_raw else False
-                        except Exception:
-                            end_raw = False
-                    _logger.warning(
-                        "[FSM SLOT DEBUG] busy interval calc task=%s start=%s end=%s fallback_hours=%s source=%s",
-                        t.id,
-                        start_raw,
-                        end_raw,
-                        fallback_hours,
-                        fallback_source,
-                    )
-                    if start_raw and end_raw and t.id != self.task_id.id:
-                        start_local = self._to_local(start_raw)
-                        end_local = self._to_local(end_raw)
-                        # Pad existing tasks with buffers so adjacency is treated as overlap
-                        intervals.append((start_local - buffer_before, end_local + buffer_after))
-            leader_busy[leader.id] = intervals
-            _logger.warning(
-                "[FSM SLOT DEBUG] leader=%s busy_intervals_count=%s sample=%s",
-                leader.name,
-                len(intervals),
-                [(a, b) for a, b in intervals[:5]],
-            )
-
-        current_day = start_dt.date()
-        while datetime.combine(current_day, time.min) < search_end:
-            if self.filter_use_date and self.date_filter_start and current_day < self.date_filter_start:
-                current_day += timedelta(days=1)
-                continue
-            if self.filter_use_date and self.date_filter_end and current_day > self.date_filter_end:
-                break
-
-            for team in teams:
-                leader = team.lead_user_id
-                if not leader:
-                    continue
-
-                calendar = (
-                    team.calendar_id
-                    or getattr(leader, 'resource_calendar_id', False)
-                    or self.env.company.resource_calendar_id
-                    or self.env.ref('resource.resource_calendar_std', raise_if_not=False)
-                )
-                if not calendar:
-                    _logger.warning("[FSM SLOT DEBUG] no calendar for team=%s leader=%s", team.name, leader.name)
-                    continue
-                attendances = calendar.attendance_ids.filtered(lambda a: not a.display_type and a.dayofweek == str(current_day.weekday()))
-                if not attendances:
-                    _logger.warning(
-                        "[FSM SLOT DEBUG] no attendances for team=%s leader=%s day=%s",
-                        team.name,
-                        leader.name,
-                        current_day,
-                    )
-                    continue
-
-                for att in attendances:
-                    day_start_hour = att.hour_from
-                    day_end_hour = att.hour_to
-                    if time_start is not None:
-                        day_start_hour = max(day_start_hour, time_start)
-                    if time_end is not None:
-                        day_end_hour = min(day_end_hour, time_end)
-
-                    start_hour, start_min = float_hours_to_hm(day_start_hour)
-                    end_hour, end_min = float_hours_to_hm(day_end_hour)
-                    shift_start = datetime.combine(current_day, time(start_hour, start_min)) + timedelta(minutes=lead_minutes)
-                    shift_end = datetime.combine(current_day, time(end_hour, end_min))
-                    if shift_end <= shift_start:
-                        _logger.warning(
-                            "[FSM SLOT DEBUG] invalid shift team=%s leader=%s shift_start=%s shift_end=%s",
-                            team.name,
-                            leader.name,
-                            shift_start,
-                            shift_end,
-                        )
-                        continue
-                    if shift_start < start_dt:
-                        shift_start = start_dt
-
-                    busy_intervals = []
-                    for b_start, b_end in leader_busy.get(leader.id, []):
-                        if b_start >= shift_end or b_end <= shift_start:
-                            continue
-                        busy_intervals.append((max(b_start, shift_start), min(b_end, shift_end)))
-
-                    busy_intervals.sort(key=lambda i: i[0])
-
-                    open_segments = []
-                    cursor = shift_start
-                    for b_start, b_end in busy_intervals:
-                        if b_start > cursor:
-                            open_segments.append((cursor, b_start))
-                        cursor = max(cursor, b_end)
-                    if cursor < shift_end:
-                        open_segments.append((cursor, shift_end))
-
-                    if not open_segments:
-                        _logger.warning(
-                            "[FSM SLOT DEBUG] no open segments team=%s leader=%s shift=%s..%s",
-                            team.name,
-                            leader.name,
-                            shift_start,
-                            shift_end,
-                        )
-
-                    _logger.warning(
-                        "[FSM SLOT DEBUG] leader=%s shift_utc=%s..%s busy_count=%s busy=%s",
-                        leader.name,
-                        self._to_utc(shift_start),
-                        self._to_utc(shift_end),
-                        len(busy_intervals),
-                        [(self._to_utc(a), self._to_utc(b)) for a, b in busy_intervals[:10]],
-                    )
-
-                    for seg_start, seg_end in open_segments:
-                        candidate_start = seg_start + buffer_before
-                        candidate_end = candidate_start + timedelta(hours=needed_hours)
-                        fits = candidate_end + buffer_after <= seg_end
-                        _logger.warning(
-                            "[FSM SLOT DEBUG] leader=%s seg_utc=%s..%s candidate_utc=%s..%s fits=%s leader_intervals=%s",
-                            leader.name,
-                            self._to_utc(seg_start),
-                            self._to_utc(seg_end),
-                            self._to_utc(candidate_start),
-                            self._to_utc(candidate_end + buffer_after),
-                            fits,
-                            [(a, b) for a, b in leader_busy.get(leader.id, [])[:10]],
-                        )
-                        if fits:
-                            slot_start_utc = self._to_utc(candidate_start)
-                            slot_end_utc = self._to_utc(candidate_end + buffer_after)
-                            slots.append({'start': candidate_start, 'end': candidate_end + buffer_after, 'team': team})
-                            _logger.warning(
-                                "[FSM SLOT DEBUG] SLOT_ADDED team=%s leader=%s slot_utc=%s..%s",
-                                team.name,
-                                leader.name,
-                                slot_start_utc,
-                                slot_end_utc,
-                            )
-
-            current_day += timedelta(days=1)
-
-        slots.sort(key=lambda s: s['start'])
-        limited = slots[:limit]
-        formatted = [
-            f"team={s['team'].id if s.get('team') else 'None'} start={s['start']} end={s['end']}" for s in limited
-        ]
-        _logger.warning(
-            "[FSM SLOT SEARCH] leads=%s search_start=%s search_end=%s slots=%s",
-            teams.mapped('lead_user_id.name'),
-            search_start_utc,
-            search_end_utc,
-            formatted or '[]',
-        )
-
-        _logger.warning("[FSM SLOT DEBUG] total_slots=%s limited=%s", len(slots), len(limited))
-
-        return limited
 
     @api.depends('task_id', 'partner_id', 'planned_hours', 'slot_index', 'search_start_dt', 'date_filter_start', 'date_filter_end', 'time_filter_start', 'time_filter_end', 'filter_use_date', 'filter_use_time', 'team_id')
     def _compute_slots(self):

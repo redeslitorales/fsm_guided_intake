@@ -13,9 +13,42 @@ class FsmTaskType(models.Model):
     project_id = fields.Many2one("project.project", string="Project", required=True)
     default_stage_id = fields.Many2one("project.task.type", string="Default Stage",
                                        domain="[('project_ids', 'in', project_id)]")
-    default_planned_hours = fields.Float(string="Default Planned Hours", default=1.0)
+    default_work_units = fields.Integer(
+        string="Default Work Units",
+        default=2,
+        help="Default work effort units applied when creating tasks of this type.",
+    )
+    default_planned_hours = fields.Float(
+        string="Default Planned Hours",
+        compute="_compute_default_planned_hours",
+        store=True,
+        help="Computed as work units * 15 minutes (0.25 hours) for scheduling defaults.",
+    )
+    priority = fields.Selection(
+        [
+            ("1", "Flexible"),
+            ("2", "Low"),
+            ("3", "Normal"),
+            ("4", "High"),
+            ("5", "Critical"),
+        ],
+        string="Task Priority",
+        default="3",
+        help="Scheduling priority used by planners; higher values are scheduled first.",
+    )
     buffer_before_mins = fields.Integer(string="Buffer Before (min)", default=0)
     buffer_after_mins = fields.Integer(string="Buffer After (min)", default=0)
+    skill_level = fields.Selection(
+        [("L1", "L1"), ("L2", "L2"), ("L3", "L3")],
+        string="Skill Level",
+        help="Minimum technician skill level required for this task type.",
+    )
+    
+    @api.depends("default_work_units")
+    def _compute_default_planned_hours(self):
+        """Compute planned hours from work units (15 minutes each)."""
+        for rec in self:
+            rec.default_planned_hours = (rec.default_work_units or 0) * 15.0 / 60.0
 
     tag_ids = fields.Many2many("project.tags", string="Default Tags")
 

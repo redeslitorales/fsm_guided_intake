@@ -45,3 +45,10 @@ class ResConfigSettings(models.TransientModel):
         config_parameter="fsm_guided_intake.cat6_wall_jack_product_id",
         help="Product to bill per unit when wall jacks are captured on a task.",
     )
+    fsm_slot_travel_buffer_minutes = fields.Integer(
+        string="Travel Buffer Minutes Between Jobs",
+        config_parameter="fsm_guided_intake.slot_travel_buffer_minutes",
+        default=0,
+        help="Minutes reserved before and after every scheduled task to allow travel time between jobs.",
+)
+

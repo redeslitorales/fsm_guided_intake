@@ -8,6 +8,8 @@
                 <field name="name"/>
                 <field name="project_id"/>
                 <field name="default_planned_hours"/>
+                <field name="priority" widget="priority"/>
+                <field name="skill_level"/>
                 <field name="is_installation"/>
                 <field name="requires_products"/>
                 <field name="requires_serials"/>
@@ -27,6 +29,8 @@
             <tree>
                 <field name="name" width="300"/>
                 <field name="default_planned_hours"/>
+                <field name="priority" widget="priority"/>
+                <field name="skill_level"/>
             </tree>
         </field>
     </record>
@@ -39,10 +43,8 @@
                 <sheet>
                     <group>
                         <field name="name"/>
+                        <field name="default_planned_hours" readonly="1"/>
                         <field name="active"/>
-                        <field name="project_id"/>
-                        <field name="default_stage_id"/>
-                        <field name="default_planned_hours"/>
                     </group>
                     <group string="Requirements">
                         <field name="requires_products"/>
@@ -50,15 +52,21 @@
                         <field name="requires_signature"/>
                         <field name="requires_photos"/>
                         <field name="never_has_product"/>
-                        <field name="include_in_wizard"/>
-                        <field name="is_client_task"/>
                         <field name="is_installation"/>
                         <field name="requires_fiber_install"/>
                         <field name="requires_iptv_install"/>
+                    </group>
+                    <group string="Wizard Properties">
+                        <field name="include_in_wizard"/>
+                        <field name="is_client_task"/>
                         <field name="product_category_ids" widget="many2many_tags"/>
                         <field name="subscription_category_ids" widget="many2many_tags"/>
                     </group>
                     <group string="Scheduling">
+                        <field name="project_id"/>
+                        <field name="default_stage_id"/>
+                        <field name="default_work_units"/>
+                        <field name="priority" widget="priority"/>
                         <field name="buffer_before_mins"/>
                         <field name="buffer_after_mins"/>
                         <field name="may_be_rescheduled"/>
@@ -75,6 +83,7 @@
                         <field name="tag_ids" widget="many2many_tags"/>
                     </group>
                     <group string="Capabilities">
+                        <field name="skill_level"/>
                         <field name="capable_team_ids" widget="many2many_tags"/>
                         <field name="preferred_team_ids" widget="many2many_tags"/>
                     </group>
