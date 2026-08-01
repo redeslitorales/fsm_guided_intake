@@ -22,6 +22,7 @@
                         <field name="available_subscription_ids" invisible="1"/>
                         <field name="available_sale_order_ids" invisible="1"/>
                         <field name="available_task_type_ids" invisible="1"/>
+                        <field name="scheduling_mode" invisible="1"/>
                         <field name="reschedule_task_id" invisible="1"/>
                     </group>
 
@@ -182,9 +183,11 @@
                         <group string="Summary" class="o_colspan_2">
                             <field name="task_type_id" readonly="1" colspan="2" class="o_colspan_2"/>
                             <field name="partner_id" readonly="1" colspan="2" class="o_colspan_2"/>
+                            <field name="subscription_id" readonly="1" colspan="2" class="o_colspan_2"
+                                   invisible="not subscription_id"/>
                             <field name="service_address_id" readonly="1" colspan="2" class="o_colspan_2"
                                    invisible="not service_address_id"/>
-                            <field name="selected_slot_label" readonly="1" string="Scheduled Time" colspan="2" class="o_colspan_2"/>
+                            <field name="selected_slot_label" readonly="1" string="Schedule Selection" colspan="2" class="o_colspan_2"/>
                             <field name="team_id" readonly="1" colspan="2" class="o_colspan_2"
                                    invisible="not team_id"/>
                         </group>
@@ -219,6 +222,7 @@
         <field name="res_model">fsm.task.intake.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
+        <field name="context">{'default_scheduling_mode': 'exact'}</field>
         <field name="binding_model_id" ref="model_project_task"/>
     </record>
 

@@ -26,6 +26,26 @@
                                  help="Minutes reserved before and after every scheduled task to allow travel time between jobs.">
                             <field name="fsm_slot_travel_buffer_minutes"/>
                         </setting>
+                        <setting string="Urgent capacity reserve (%)"
+                                 help="Percent of shift capacity kept aside for urgent work before sellable capacity is calculated.">
+                            <field name="fsm_urgent_capacity_reserve_pct"/>
+                        </setting>
+                        <setting string="Protect Fiber→Basic (%)"
+                                 help="Percent of Fiber (L3) capacity protected from Basic (L1) bookings when down-skilling.">
+                            <field name="fsm_protect_fiber_to_basic_pct"/>
+                        </setting>
+                        <setting string="Protect Fiber→Standard (%)"
+                                 help="Percent of Fiber (L3) capacity protected from Standard (L2) bookings when down-skilling.">
+                            <field name="fsm_protect_fiber_to_standard_pct"/>
+                        </setting>
+                        <setting string="Protect Standard→Basic (%)"
+                                 help="Percent of Standard (L2) capacity protected from Basic (L1) bookings when down-skilling.">
+                            <field name="fsm_protect_standard_to_basic_pct"/>
+                        </setting>
+                        <setting string="L3 capacity reserve (hours)"
+                                 help="Hours of daily capacity kept aside for L3 work when offering slots.">
+                            <field name="fsm_l3_capacity_reserve_hours"/>
+                        </setting>
                     </block>
                     <block title="Installation Tracking">
                         <setting string="Installation Task Type"

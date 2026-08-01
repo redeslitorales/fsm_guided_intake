@@ -10,4 +10,26 @@
         <field name="numbercall">-1</field>
         <field name="active">True</field>
     </record>
+
+    <record id="ir_cron_fsm_generate_capacity_from_shifts" model="ir.cron">
+        <field name="name">FSM Generate Capacity From Shifts</field>
+        <field name="model_id" ref="fsm_guided_intake.model_fsm_capacity_day"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_generate_from_shifts()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+    </record>
+
+    <record id="ir_cron_fsm_dispatch_planner" model="ir.cron">
+        <field name="name">FSM Nightly Dispatch Planner</field>
+        <field name="model_id" ref="fsm_guided_intake.model_fsm_dispatch_planner"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_run()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+    </record>
 </odoo>

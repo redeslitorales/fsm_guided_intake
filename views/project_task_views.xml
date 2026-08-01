@@ -30,6 +30,7 @@
             <xpath expr="//form/header" position="inside">
                 <field name="fsm_requires_fiber_install" invisible="1"/>
                 <field name="fsm_requires_iptv_install" invisible="1"/>
+                <field name="fsm_requires_photos" invisible="1"/>
 
                 <button name="%(fsm_guided_intake.action_fsm_task_intake_wizard)d"
                     type="action"
@@ -56,7 +57,70 @@
             </xpath>
 
             <xpath expr="//field[@name='user_ids']" position="after">
+                <field name="fsm_task_type_id"
+                       string="Task Type"
+                       readonly="1"
+                       groups="!industry_fsm.group_fsm_manager"
+                       options="{'no_create': True, 'no_create_edit': True}"/>
+                <field name="fsm_task_type_edit_mode"
+                       invisible="1"
+                       groups="industry_fsm.group_fsm_manager"/>
+                <label for="fsm_task_type_id"
+                       string="Task Type"
+                       groups="industry_fsm.group_fsm_manager"/>
+                <div class="o_row align-items-center gap-2"
+                     groups="industry_fsm.group_fsm_manager">
+                    <field name="fsm_task_type_id"
+                           nolabel="1"
+                           class="oe_inline"
+                           readonly="not fsm_task_type_edit_mode"
+                           options="{'no_create': True, 'no_create_edit': True}"/>
+                    <button name="action_enable_fsm_task_type_edit"
+                            type="object"
+                            string="Edit Task Type"
+                            icon="fa-pencil"
+                            class="btn btn-secondary btn-sm text-nowrap"
+                            invisible="fsm_task_type_edit_mode"/>
+                    <button name="action_disable_fsm_task_type_edit"
+                            type="object"
+                            string="Done"
+                            icon="fa-check"
+                            class="btn btn-secondary btn-sm text-nowrap"
+                            invisible="not fsm_task_type_edit_mode"/>
+                </div>
                 <field name="team_id"/>
+                <field name="fsm_subscription_id"
+                       string="Subscription"
+                       readonly="1"
+                       invisible="not is_fsm"
+                       options="{'no_create': True}"/>
+                <field name="fsm_geo_edit_mode" invisible="1"/>
+                <field name="fsm_latitude"
+                       string="GPS Latitude"
+                       readonly="not fsm_geo_edit_mode"
+                       invisible="not is_fsm"/>
+                <label for="fsm_longitude"
+                       string="GPS Longitude"
+                       invisible="not is_fsm"/>
+                <div class="o_row align-items-center gap-2" invisible="not is_fsm">
+                    <field name="fsm_longitude"
+                           nolabel="1"
+                           class="oe_inline"
+                           readonly="not fsm_geo_edit_mode"/>
+                    <button name="action_enable_fsm_geo_edit"
+                            type="object"
+                            string="Edit GPS"
+                            icon="fa-pencil"
+                            class="btn btn-secondary btn-sm text-nowrap"
+                            invisible="fsm_geo_edit_mode"/>
+                    <button name="action_disable_fsm_geo_edit"
+                            type="object"
+                            string="Done"
+                            icon="fa-check"
+                            class="btn btn-secondary btn-sm text-nowrap"
+                            invisible="not fsm_geo_edit_mode"/>
+                </div>
+                <field name="bonus_points" string="Performance Points" readonly="1"/>
             </xpath>
 
             <xpath expr="//sheet" position="inside">
@@ -136,6 +200,12 @@
 
                     <group>
                         <field name="fsm_install_complete" readonly="1"/>
+                    </group>
+                </page>
+
+                <page string="Photos" invisible="not fsm_requires_photos and not fsm_requires_fiber_install">
+                    <group string="Photo Evidence">
+                        <field name="fsm_photo_attachment_ids" widget="many2many_binary"/>
                     </group>
                 </page>
 

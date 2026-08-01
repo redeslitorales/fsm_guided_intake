@@ -50,5 +50,35 @@ class ResConfigSettings(models.TransientModel):
         config_parameter="fsm_guided_intake.slot_travel_buffer_minutes",
         default=0,
         help="Minutes reserved before and after every scheduled task to allow travel time between jobs.",
-)
+    )
+    fsm_urgent_capacity_reserve_pct = fields.Float(
+        string="Urgent Capacity Reserve (%)",
+        config_parameter="fsm_guided_intake.urgent_capacity_reserve_pct",
+        default=0.0,
+        help="Percent of each day's shift capacity kept aside for urgent work before sellable capacity is calculated.",
+    )
+    fsm_protect_standard_to_basic_pct = fields.Float(
+        string="Protect Standard→Basic (%)",
+        config_parameter="fsm_guided_intake.protect_standard_to_basic_pct",
+        default=0.25,
+        help="Percent of a Standard (L2) team's capacity kept reserved from Basic (L1) bookings when down-skilling.",
+    )
+    fsm_protect_fiber_to_basic_pct = fields.Float(
+        string="Protect Fiber→Basic (%)",
+        config_parameter="fsm_guided_intake.protect_fiber_to_basic_pct",
+        default=0.40,
+        help="Percent of a Fiber (L3) team's capacity kept reserved from Basic (L1) bookings when down-skilling.",
+    )
+    fsm_protect_fiber_to_standard_pct = fields.Float(
+        string="Protect Fiber→Standard (%)",
+        config_parameter="fsm_guided_intake.protect_fiber_to_standard_pct",
+        default=0.40,
+        help="Percent of a Fiber (L3) team's capacity kept reserved from Standard (L2) bookings when down-skilling.",
+    )
+    fsm_l3_capacity_reserve_hours = fields.Float(
+        string="L3 Capacity Reserve (Hours)",
+        config_parameter="fsm_guided_intake.l3_capacity_reserve_hours",
+        default=0.0,
+        help="Hours of daily capacity to keep reserved for L3 work when offering slots.",
+    )
 

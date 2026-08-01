@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_fsm_day_reservation_tree" model="ir.ui.view">
+        <field name="name">fsm.day.reservation.tree</field>
+        <field name="model">fsm.day.reservation</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="service_date"/>
+                <field name="task_id"/>
+                <field name="task_type_id"/>
+                <field name="capacity_bucket"/>
+                <field name="required_minutes"/>
+                <field name="priority"/>
+                <field name="zone"/>
+                <field name="assigned_team_id"/>
+                <field name="dispatch_state"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_fsm_day_reservation_form" model="ir.ui.view">
+        <field name="name">fsm.day.reservation.form</field>
+        <field name="model">fsm.day.reservation</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_finalize_dispatch"
+                            type="object"
+                            string="Finalize Dispatch"
+                            class="btn-primary"
+                            invisible="dispatch_state != 'pending'"/>
+                    <field name="dispatch_state" widget="statusbar" statusbar_visible="pending,finalized,cancelled"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="task_id"/>
+                        <field name="service_date"/>
+                        <field name="task_type_id"/>
+                        <field name="capacity_bucket"/>
+                        <field name="required_minutes"/>
+                    </group>
+                    <group>
+                        <field name="priority"/>
+                        <field name="zone"/>
+                        <field name="assigned_team_id"/>
+                        <field name="assigned_start_date"/>
+                        <field name="assigned_start_time" widget="float_time"/>
+                        <field name="assigned_end_date"/>
+                        <field name="assigned_end_time" widget="float_time"/>
+                        <field name="assigned_start_datetime" invisible="1"/>
+                        <field name="assigned_end_datetime" invisible="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_fsm_day_reservation" model="ir.actions.act_window">
+        <field name="name">Day Reservations</field>
+        <field name="res_model">fsm.day.reservation</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_fsm_day_reservation"
+              name="Day Reservations"
+              parent="menu_fsm_scheduling"
+              action="action_fsm_day_reservation"
+              sequence="36"/>
+
+    <record id="action_fsm_dispatch_planner" model="ir.actions.act_window">
+        <field name="name">Run Dispatch Planner</field>
+        <field name="res_model">fsm.dispatch.planner</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="view_fsm_dispatch_planner_form" model="ir.ui.view">
+        <field name="name">fsm.dispatch.planner.form</field>
+        <field name="model">fsm.dispatch.planner</field>
+        <field name="arch" type="xml">
+            <form string="Dispatch Planner">
+                <sheet>
+                    <group>
+                        <field name="run_date"/>
+                    </group>
+                    <group>
+                        <field name="result_message" readonly="1" nolabel="1"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_plan" type="object" string="Run Planner" class="btn-primary"/>
+                    <button string="Close" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <menuitem id="menu_fsm_dispatch_planner"
+              name="Dispatch Planner"
+              parent="menu_fsm_scheduling"
+              action="action_fsm_dispatch_planner"
+              sequence="37"/>
+</odoo>

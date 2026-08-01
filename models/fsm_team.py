@@ -23,6 +23,16 @@ class FsmTeam(models.Model):
     calendar_id = fields.Many2one("resource.calendar", string="Working Calendar")
     warehouse_id = fields.Many2one("stock.warehouse", string="Warehouse")
 
+    skill_level = fields.Selection(
+        [
+            ("L1", "L1"),
+            ("L2", "L2"),
+            ("L3", "L3"),
+        ],
+        string="Skill Level",
+        help="Minimum skill level this team is equipped to handle.",
+    )
+
     capable_project_ids = fields.Many2many("project.project", string="Capable Projects")
     capable_task_type_ids = fields.Many2many(
         "fsm.task.type",
@@ -87,6 +97,47 @@ class FsmTeamShift(models.Model):
                 raise ValidationError(_("Shift end time must be after start time."))
             if rec.capacity_hours <= 0:
                 raise ValidationError(_("Shift capacity must be > 0."))
+
+    def _get_resource_calendar(self):
+        """Return the calendar that defines capacity for this shift.
+
+        Requirement: derive shift capacity from the team lead's resource calendar
+        when available; fall back to the team's calendar if the lead has none.
+        """
+        self.ensure_one()
+        lead_calendar = False
+        if self.team_id and self.team_id.lead_user_id:
+            # Prefer the employee calendar; fall back to user calendar if present.
+            lead_calendar = (
+                getattr(self.team_id.lead_user_id, "employee_id", False)
+                and self.team_id.lead_user_id.employee_id.resource_calendar_id
+            ) or getattr(self.team_id.lead_user_id, "resource_calendar_id", False)
+
+        return lead_calendar or self.team_id.calendar_id
+
+    def _hours_for_weekday(self, weekday):
+        """Compute usable hours for a specific weekday based on the lead's calendar.
+
+        The shift window (start/end) is intersected with the calendar attendances for
+        the given weekday. If no calendar is available, fall back to the shift's
+        configured capacity_hours.
+        """
+        self.ensure_one()
+        calendar = self._get_resource_calendar()
+        if not calendar:
+            return max(0.0, self.capacity_hours or (self.end_time - self.start_time))
+
+        attendances = calendar.attendance_ids.filtered(lambda a: int(a.dayofweek) == weekday)
+        if not attendances:
+            return 0.0
+
+        total = 0.0
+        for att in attendances:
+            overlap_start = max(att.hour_from, self.start_time)
+            overlap_end = min(att.hour_to, self.end_time)
+            if overlap_end > overlap_start:
+                total += overlap_end - overlap_start
+        return total
 
     def _get_weekday_set(self):
         """Return a set of Python weekday ints covered by this shift pattern."""

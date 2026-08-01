@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+    <record id="view_fsm_task_priority_slot_tree" model="ir.ui.view">
+        <field name="name">fsm.task.priority.slot.tree</field>
+        <field name="model">fsm.task.priority.slot</field>
+        <field name="arch" type="xml">
+            <tree editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="priority"/>
+                <field name="dayofweek" column_invisible="1"/>
+                <field name="dayofweek_ids" widget="many2many_tags"/>
+                <field name="hour_from" widget="float_time"/>
+                <field name="hour_to" widget="float_time"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_fsm_task_priority_slot_form" model="ir.ui.view">
+        <field name="name">fsm.task.priority.slot.form</field>
+        <field name="model">fsm.task.priority.slot</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="active"/>
+                        <field name="priority"/>
+                        <field name="dayofweek" invisible="1"/>
+                        <field name="dayofweek_ids" widget="many2many_tags" required="1"/>
+                        <field name="hour_from" widget="float_time"/>
+                        <field name="hour_to" widget="float_time"/>
+                        <field name="sequence"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_fsm_task_priority_slot" model="ir.actions.act_window">
+        <field name="name">Priority Time Windows</field>
+        <field name="res_model">fsm.task.priority.slot</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_fsm_task_priority_slot"
+              name="Priority Time Windows"
+              parent="industry_fsm.fsm_menu_settings"
+              action="action_fsm_task_priority_slot"
+              sequence="25"/>
+    </data>
+</odoo>

@@ -8,6 +8,8 @@
                 <field name="name"/>
                 <field name="project_id"/>
                 <field name="default_planned_hours"/>
+                <field name="default_required_minutes"/>
+                <field name="bonus_base_points"/>
                 <field name="priority" widget="priority"/>
                 <field name="skill_level"/>
                 <field name="is_installation"/>
@@ -44,6 +46,8 @@
                     <group>
                         <field name="name"/>
                         <field name="default_planned_hours" readonly="1"/>
+                        <field name="default_required_minutes"/>
+                        <field name="bonus_base_points"/>
                         <field name="active"/>
                     </group>
                     <group string="Requirements">
@@ -102,5 +106,6 @@
     </record>
 
     <menuitem id="menu_fsm_intake_root" name="FSM Intake" parent="industry_fsm.fsm_menu_root" sequence="10" action="fsm_guided_intake.action_fsm_task_intake_wizard" groups="fsm_guided_intake.group_fsm_intake_user"/>
+    <menuitem id="menu_fsm_scheduling" name="FSM Scheduling" parent="industry_fsm.fsm_menu_root" sequence="20"/>
     <menuitem id="menu_fsm_task_type" name="Task Types" parent="industry_fsm.fsm_menu_settings" action="action_fsm_task_type" sequence="20"/>
 </odoo>

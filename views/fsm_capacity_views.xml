@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_fsm_capacity_day_tree" model="ir.ui.view">
+        <field name="name">fsm.capacity.day.tree</field>
+        <field name="model">fsm.capacity.day</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="date"/>
+                <field name="team_id"/>
+                <field name="shift_id"/>
+                <field name="skill_level"/>
+                <field name="capacity_kind"/>
+                <field name="state"/>
+                <field name="total_minutes"/>
+                <field name="reserved_minutes"/>
+                <field name="sellable_minutes"/>
+                <field name="booked_minutes"/>
+                <field name="remaining_minutes"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_fsm_capacity_day_form" model="ir.ui.view">
+        <field name="name">fsm.capacity.day.form</field>
+        <field name="model">fsm.capacity.day</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="date"/>
+                        <field name="team_id"/>
+                        <field name="shift_id"/>
+                        <field name="skill_level"/>
+                        <field name="capacity_kind"/>
+                        <field name="state"/>
+                    </group>
+                    <group>
+                        <field name="total_minutes"/>
+                        <field name="reserved_minutes"/>
+                        <field name="sellable_minutes" readonly="1"/>
+                        <field name="booked_minutes"/>
+                        <field name="remaining_minutes" readonly="1"/>
+                    </group>
+                    <notebook>
+                        <page string="Task Type Lines">
+                            <field name="line_ids">
+                                <tree editable="bottom">
+                                    <field name="bucket_skill_level"/>
+                                    <field name="task_type_id"/>
+                                    <field name="total_minutes"/>
+                                    <field name="protected_minutes"/>
+                                    <field name="sellable_minutes"/>
+                                    <field name="available_minutes"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_fsm_capacity_day" model="ir.actions.act_window">
+        <field name="name">Daily Capacity</field>
+        <field name="res_model">fsm.capacity.day</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_fsm_capacity_day" name="Daily Capacity" parent="menu_fsm_scheduling" action="action_fsm_capacity_day" sequence="35"/>
+</odoo>

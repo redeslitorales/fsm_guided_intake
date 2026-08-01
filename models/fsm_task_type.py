@@ -24,6 +24,16 @@ class FsmTaskType(models.Model):
         store=True,
         help="Computed as work units * 15 minutes (0.25 hours) for scheduling defaults.",
     )
+    default_required_minutes = fields.Integer(
+        string="Default Required Minutes",
+        default=0,
+        help="Single source for day-capacity demand. If 0, it is derived from default planned hours.",
+    )
+    bonus_base_points = fields.Integer(
+        string="Base Bonus Points",
+        default=0,
+        help="Base points copied into tasks of this type when they are created.",
+    )
     priority = fields.Selection(
         [
             ("1", "Flexible"),
@@ -153,6 +163,20 @@ class FsmTaskType(models.Model):
             if rec.default_planned_hours < 0:
                 raise ValidationError(_("Planned hours must be >= 0."))
 
+    @api.constrains("default_required_minutes")
+    def _check_required_minutes(self):
+        for rec in self:
+            if rec.default_required_minutes < 0:
+                raise ValidationError(_("Default required minutes must be >= 0."))
+
+    def _get_required_minutes(self):
+        self.ensure_one()
+        if self.default_required_minutes:
+            return self.default_required_minutes
+        if self.default_planned_hours:
+            return int(round(self.default_planned_hours * 60.0))
+        return max(int((self.default_work_units or 0) * 15), 60)
+
     @api.constrains("requires_products", "project_id")
     def _check_project_allows_materials(self):
         for rec in self:
@@ -164,11 +188,11 @@ class FsmTaskType(models.Model):
             if rec.requires_products and rec.project_id and hasattr(rec.project_id, "allow_materials") and not rec.project_id.allow_materials:
                 raise ValidationError(_("Project '%s' must allow materials when products are required.") % rec.project_id.display_name)
 
-    @api.model
-    def create(self, vals):
-        record = super().create(vals)
-        record._validate_materials_allowed()
-        return record
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records._validate_materials_allowed()
+        return records
 
     def write(self, vals):
         res = super().write(vals)

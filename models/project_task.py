@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+from markupsafe import Markup
+
 from odoo import api, fields, models, _
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from datetime import datetime, timedelta, time
 
 
@@ -26,16 +28,50 @@ class ProjectTaskMaterial(models.Model):
 
 class ProjectTask(models.Model):
     _inherit = "project.task"
+    _FSM_INTAKE_WIZARD_STATES = {"customer", "type", "products", "schedule", "notes", "confirm"}
 
     fsm_task_type_id = fields.Many2one("fsm.task.type", string="Task Type", copy=False)
     fsm_service_address_id = fields.Many2one("res.partner", string="Service Address", copy=False)
     fsm_service_zone_name = fields.Char(string="Service Zone", copy=False)
     fsm_booking_id = fields.Many2one("fsm.booking", string="Booking", copy=False)
+    fsm_subscription_id = fields.Many2one(
+        "sale.order",
+        string="Subscription",
+        copy=True,
+        index=True,
+        ondelete="set null",
+        domain="[('is_subscription', '=', True)]",
+        help="Customer subscription selected when this task was created through FSM intake.",
+    )
+    fsm_latitude = fields.Float(
+        string="GPS Latitude",
+        digits=(16, 7),
+        copy=True,
+        help="Service coordinates copied from the customer or service-address partner.",
+    )
+    fsm_longitude = fields.Float(
+        string="GPS Longitude",
+        digits=(16, 7),
+        copy=True,
+        help="Service coordinates copied from the customer or service-address partner.",
+    )
+    fsm_geo_edit_mode = fields.Boolean(
+        compute="_compute_fsm_geo_edit_mode",
+    )
+    fsm_task_type_edit_mode = fields.Boolean(
+        compute="_compute_fsm_task_type_edit_mode",
+    )
     team_id = fields.Many2one("fsm.team", string="FSM Team", copy=False, help="Assigned field service team")
     fsm_material_ids = fields.One2many("fsm.task.material", "task_id", string="Materials/Services", copy=False)
     fsm_invoiced = fields.Boolean(string="FSM Invoiced", default=False, copy=False)
     fsm_last_invoiced_so_id = fields.Many2one("sale.order", string="Last Invoiced SO", copy=False)
     fsm_default_planned_hours = fields.Float(string="Default Planned Hours (Type)", copy=False)
+    bonus_points = fields.Integer(
+        string="Bonus Points",
+        default=0,
+        copy=False,
+        help="Points value used for bonus calculations.",
+    )
     fsm_planned_hours_warning = fields.Boolean(
         string="Planned Hours Mismatch",
         compute="_compute_planned_hours_warning",
@@ -62,6 +98,12 @@ class ProjectTask(models.Model):
     fsm_requires_iptv_install = fields.Boolean(
         string="Requires IPTV Install",
         related="fsm_task_type_id.requires_iptv_install",
+        store=True,
+        readonly=True,
+    )
+    fsm_requires_photos = fields.Boolean(
+        string="Requires Photos",
+        related="fsm_task_type_id.requires_photos",
         store=True,
         readonly=True,
     )
@@ -105,6 +147,14 @@ class ProjectTask(models.Model):
     fsm_drop_cable_start = fields.Char(string="Drop Cable Start", copy=False)
     fsm_drop_cable_end = fields.Char(string="Drop Cable End", copy=False)
     fsm_customer_signature = fields.Binary(string="Customer Signature", copy=False, attachment=True)
+    fsm_photo_attachment_ids = fields.Many2many(
+        "ir.attachment",
+        "project_task_fsm_photo_rel",
+        "task_id",
+        "attachment_id",
+        string="Photo Evidence",
+        copy=False,
+    )
     
     fsm_install_complete = fields.Boolean(
         string="Install Worksheet Complete",
@@ -150,6 +200,24 @@ class ProjectTask(models.Model):
     )
 
     # --- Stage helpers -------------------------------------------------
+    def _fsm_get_team_assignee_user_ids(self, team):
+        """Return assignees for a team: all member users plus team lead."""
+        if not team:
+            return []
+        users = team.member_ids.mapped("user_id")
+        if team.lead_user_id:
+            users |= team.lead_user_id
+        return users.ids
+
+    @api.onchange("team_id")
+    def _onchange_team_id_sync_assignees(self):
+        """Refresh assignees when team changes in the form."""
+        for task in self:
+            if "user_ids" not in task._fields:
+                continue
+            assignee_ids = task._fsm_get_team_assignee_user_ids(task.team_id)
+            task.user_ids = [(6, 0, assignee_ids)]
+
     def _fsm_find_stage(self, names):
         """Find a stage by name (case-insensitive), preferring the task's project.
 
@@ -222,20 +290,6 @@ class ProjectTask(models.Model):
             return True
         return False
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        """Override create to auto-link installation tasks to subscriptions."""
-        tasks = super().create(vals_list)
-        tasks._link_installation_task_to_subscription()
-        return tasks
-
-    def write(self, vals):
-        """Override write to update installation task link when task type or sale order changes."""
-        res = super().write(vals)
-        if 'fsm_task_type_id' in vals or 'sale_order_id' in vals:
-            self._link_installation_task_to_subscription()
-        return res
-
     def _link_installation_task_to_subscription(self):
         """Link task to subscription's installation_task_id if task type matches setting."""
         installation_type_id = int(
@@ -247,12 +301,14 @@ class ProjectTask(models.Model):
             return
 
         for task in self:
+            sale_order = task.sale_order_id
             if (
                 task.fsm_task_type_id.id == installation_type_id
-                and task.sale_order_id
-                and task.sale_order_id.installation_task_id != task
+                and sale_order
+                and "installation_task_id" in sale_order._fields
+                and sale_order.installation_task_id != task
             ):
-                task.sale_order_id.installation_task_id = task.id
+                sale_order.installation_task_id = task.id
 
     def _fsm_create_draft_invoice(self):
         """Create/Update SO from task materials and create a draft invoice (account.move).
@@ -323,24 +379,59 @@ class ProjectTask(models.Model):
             task.fsm_planned_hours_warning = warn
             task.fsm_planned_hours_warning_text = text
 
-    @api.model
-    def create(self, vals):
-        tasks = super().create(vals)
-        if "planned_hours" in vals or "fsm_default_planned_hours" in vals:
+    @api.model_create_multi
+    def create(self, vals_list):
+        create_ctx = dict(self.env.context)
+        create_ctx.pop("default_state", None)
+        create_ctx.pop("state", None)
+        create_self = self.with_context(create_ctx)
+
+        normalized_vals_list = []
+        should_compute_warning = False
+        for vals in vals_list:
+            new_vals = dict(vals)
+            if new_vals.get("state") in self._FSM_INTAKE_WIZARD_STATES:
+                new_vals.pop("state", None)
+            if "bonus_points" not in new_vals and new_vals.get("fsm_task_type_id"):
+                task_type = create_self.env["fsm.task.type"].browse(new_vals["fsm_task_type_id"])
+                if task_type.exists():
+                    new_vals["bonus_points"] = task_type.bonus_base_points or 0
+            if "planned_hours" in new_vals or "fsm_default_planned_hours" in new_vals:
+                should_compute_warning = True
+
+            coordinate_partner_id = (
+                new_vals.get("fsm_service_address_id")
+                or new_vals.get("partner_id")
+            )
+            coordinate_partner = create_self.env["res.partner"].browse(
+                coordinate_partner_id
+            ).exists()
+            if coordinate_partner:
+                if "fsm_latitude" not in new_vals:
+                    new_vals["fsm_latitude"] = coordinate_partner.partner_latitude
+                if "fsm_longitude" not in new_vals:
+                    new_vals["fsm_longitude"] = coordinate_partner.partner_longitude
+
+            if "team_id" in new_vals and "user_ids" not in new_vals and "user_ids" in self._fields:
+                team = create_self.env["fsm.team"].browse(new_vals.get("team_id")) if new_vals.get("team_id") else False
+                assignee_ids = self._fsm_get_team_assignee_user_ids(team) if team and team.exists() else []
+                new_vals["user_ids"] = [(6, 0, assignee_ids)]
+
+            normalized_vals_list.append(new_vals)
+
+        tasks = super(ProjectTask, create_self).create(normalized_vals_list)
+        tasks._link_installation_task_to_subscription()
+
+        if should_compute_warning:
             tasks._compute_planned_hours_warning()
-        if not self.env.context.get("fsm_skip_auto_stage"):
+
+        if not create_self.env.context.get("fsm_skip_auto_stage"):
             for task in tasks:
                 if task.planned_date_begin:
                     task._fsm_apply_scheduled_stage()
                 else:
                     task._fsm_apply_unscheduled_stage()
         return tasks
-
-    def write(self, vals):
-        res = super().write(vals)
-        if "planned_hours" in vals or "fsm_default_planned_hours" in vals:
-            self._compute_planned_hours_warning()
-        return res
 
     def action_fsm_prepare_invoice(self):
         """V1: Create/Update a Sales Order linked to the task partner with task materials.
@@ -389,6 +480,22 @@ class ProjectTask(models.Model):
 
     def write(self, vals):
         skip_auto_stage = self.env.context.get("fsm_skip_auto_stage")
+        coordinate_fields = {"fsm_latitude", "fsm_longitude"}
+        coordinate_updates = {}
+        if coordinate_fields.intersection(vals):
+            if "fsm_latitude" in vals and not -90 <= float(vals["fsm_latitude"] or 0.0) <= 90:
+                raise ValidationError(_("GPS latitude must be between -90 and 90."))
+            if "fsm_longitude" in vals and not -180 <= float(vals["fsm_longitude"] or 0.0) <= 180:
+                raise ValidationError(_("GPS longitude must be between -180 and 180."))
+            coordinate_updates = {
+                task.id: (task.fsm_latitude, task.fsm_longitude)
+                for task in self
+            }
+        team_changed_ids = set()
+        if "team_id" in vals and "team_id" in self._fields:
+            incoming_team_id = vals.get("team_id") or False
+            team_changed_ids = {task.id for task in self if task.team_id.id != incoming_team_id}
+
         planned_date_in_vals = "planned_date_begin" in vals
         planned_date_value = vals.get("planned_date_begin")
         stage_change_requested = False
@@ -408,6 +515,63 @@ class ProjectTask(models.Model):
                 if not task._fsm_stage_is_done(target_stage):
                     raise ValidationError(_("Move the task to a Done stage before marking it done."))
         res = super().write(vals)
+
+        if coordinate_updates and not self.env.context.get("fsm_skip_coordinate_sync"):
+            for task in self:
+                old_latitude, old_longitude = coordinate_updates[task.id]
+                if (
+                    old_latitude == task.fsm_latitude
+                    and old_longitude == task.fsm_longitude
+                ):
+                    continue
+                coordinate_partner = task.fsm_service_address_id or task.partner_id
+                if coordinate_partner:
+                    coordinate_partner.sudo().write({
+                        "partner_latitude": task.fsm_latitude,
+                        "partner_longitude": task.fsm_longitude,
+                    })
+                task.message_post(
+                    body=Markup(
+                        "<p><strong>%s</strong></p>"
+                        "<p>%s: %s &rarr; %s<br/>%s: %s &rarr; %s</p>"
+                        "<p>%s: %s</p>"
+                    ) % (
+                        _("GPS coordinates updated"),
+                        _("Latitude"),
+                        task._fsm_format_coordinate(old_latitude),
+                        task._fsm_format_coordinate(task.fsm_latitude),
+                        _("Longitude"),
+                        task._fsm_format_coordinate(old_longitude),
+                        task._fsm_format_coordinate(task.fsm_longitude),
+                        _("Partner/Service Address"),
+                        coordinate_partner.display_name if coordinate_partner else _("Not set"),
+                    ),
+                    subtype_xmlid="mail.mt_note",
+                )
+                if task.partner_id:
+                    task.partner_id.sudo().message_post(
+                        author_id=self.env.user.partner_id.id,
+                        body=Markup(
+                            "<p><strong>%s</strong></p>"
+                            "<p>%s: <a href=\"/web#id=%s&amp;model=project.task&amp;view_type=form\">%s</a></p>"
+                            "<p>%s: %s &rarr; %s<br/>%s: %s &rarr; %s</p>"
+                            "<p>%s: %s</p>"
+                        ) % (
+                            _("GPS coordinates updated"),
+                            _("Task"),
+                            task.id,
+                            task.display_name,
+                            _("Latitude"),
+                            task._fsm_format_coordinate(old_latitude),
+                            task._fsm_format_coordinate(task.fsm_latitude),
+                            _("Longitude"),
+                            task._fsm_format_coordinate(old_longitude),
+                            task._fsm_format_coordinate(task.fsm_longitude),
+                            _("Partner/Service Address"),
+                            coordinate_partner.display_name if coordinate_partner else _("Not set"),
+                        ),
+                        subtype_xmlid="mail.mt_note",
+                    )
         if "stage_id" in vals:
             auto = self.env["ir.config_parameter"].sudo().get_param("fsm_guided_intake.auto_invoice_on_stage_done", default="False")
             stage_name = (self.env["ir.config_parameter"].sudo().get_param("fsm_guided_intake.invoice_stage_done_name", default="Done") or "Done").strip().lower()
@@ -427,7 +591,122 @@ class ProjectTask(models.Model):
                     to_schedule._fsm_apply_scheduled_stage()
             elif planned_date_in_vals and not planned_date_value:
                 self._fsm_apply_unscheduled_stage()
+
+        if "fsm_task_type_id" in vals or "sale_order_id" in vals:
+            self._link_installation_task_to_subscription()
+
+        if "planned_hours" in vals or "fsm_default_planned_hours" in vals:
+            self._compute_planned_hours_warning()
+
+        if team_changed_ids and "user_ids" in self._fields:
+            changed_tasks = self.browse(list(team_changed_ids))
+            for task in changed_tasks:
+                assignee_ids = task._fsm_get_team_assignee_user_ids(task.team_id)
+                task.write({"user_ids": [(6, 0, assignee_ids)]})
+
         return res
+
+    @api.model
+    def _fsm_format_coordinate(self, value):
+        return f"{value:.7f}" if value else _("Not set")
+
+    @api.depends_context("fsm_geo_edit_unlocked")
+    def _compute_fsm_geo_edit_mode(self):
+        unlocked = bool(self.env.context.get("fsm_geo_edit_unlocked"))
+        for task in self:
+            task.fsm_geo_edit_mode = unlocked
+
+    def _fsm_geo_edit_action(self, unlocked):
+        self.ensure_one()
+        action_context = dict(self.env.context)
+        action_context["fsm_geo_edit_unlocked"] = unlocked
+        action_context["form_view_initial_mode"] = "edit" if unlocked else "readonly"
+        return {
+            "type": "ir.actions.act_window",
+            "name": self.display_name,
+            "res_model": "project.task",
+            "res_id": self.id,
+            "view_mode": "form",
+            "target": "current",
+            "context": action_context,
+        }
+
+    def action_enable_fsm_geo_edit(self):
+        return self._fsm_geo_edit_action(True)
+
+    def action_disable_fsm_geo_edit(self):
+        return self._fsm_geo_edit_action(False)
+
+    @api.depends_context("fsm_task_type_edit_unlocked")
+    def _compute_fsm_task_type_edit_mode(self):
+        unlocked = bool(self.env.context.get("fsm_task_type_edit_unlocked"))
+        is_fsm_manager = self.env.user.has_group("industry_fsm.group_fsm_manager")
+        for task in self:
+            task.fsm_task_type_edit_mode = unlocked and is_fsm_manager
+
+    def _fsm_task_type_edit_action(self, unlocked):
+        self.ensure_one()
+        if unlocked and not self.env.user.has_group("industry_fsm.group_fsm_manager"):
+            raise AccessError(_("Only Field Service managers can change the task type."))
+
+        action_context = dict(self.env.context)
+        action_context["fsm_task_type_edit_unlocked"] = unlocked
+        action_context["form_view_initial_mode"] = "edit" if unlocked else "readonly"
+        return {
+            "type": "ir.actions.act_window",
+            "name": self.display_name,
+            "res_model": "project.task",
+            "res_id": self.id,
+            "view_mode": "form",
+            "target": "current",
+            "context": action_context,
+        }
+
+    def action_enable_fsm_task_type_edit(self):
+        return self._fsm_task_type_edit_action(True)
+
+    def action_disable_fsm_task_type_edit(self):
+        return self._fsm_task_type_edit_action(False)
+
+    @api.model
+    def _fsm_backfill_partner_coordinates(self):
+        """Initialize existing FSM task GPS and unambiguous active subscriptions."""
+        self.env.cr.execute("""
+            UPDATE project_task AS task
+               SET fsm_latitude = partner.partner_latitude,
+                   fsm_longitude = partner.partner_longitude
+              FROM res_partner AS partner,
+                   project_project AS project
+             WHERE project.id = task.project_id
+               AND project.is_fsm = TRUE
+               AND partner.id = COALESCE(task.fsm_service_address_id, task.partner_id)
+               AND COALESCE(task.fsm_latitude, 0) = 0
+               AND COALESCE(task.fsm_longitude, 0) = 0
+               AND COALESCE(partner.partner_latitude, 0) != 0
+               AND COALESCE(partner.partner_longitude, 0) != 0
+        """)
+        self.env.cr.execute("""
+            WITH single_active_subscription AS (
+                SELECT partner_id,
+                       MIN(id) AS subscription_id
+                  FROM sale_order
+                 WHERE is_subscription = TRUE
+                   AND subscription_state IN ('3_progress', '4_paused', '8_suspend')
+                   AND partner_id IS NOT NULL
+                 GROUP BY partner_id
+                HAVING COUNT(*) = 1
+            )
+            UPDATE project_task AS task
+               SET fsm_subscription_id = active.subscription_id,
+                   sale_order_id = COALESCE(task.sale_order_id, active.subscription_id)
+              FROM single_active_subscription AS active,
+                   project_project AS project
+             WHERE project.id = task.project_id
+               AND project.is_fsm = TRUE
+               AND active.partner_id = task.partner_id
+               AND task.fsm_subscription_id IS NULL
+        """)
+        return True
 
     @api.model
     def _fsm_cron_auto_invoice_done_tasks(self):
@@ -443,6 +722,69 @@ class ProjectTask(models.Model):
             if t.fsm_material_ids:
                 t._fsm_create_draft_invoice()
         return True
+
+    def _write_scheduled_datetime(self, start_dt_utc, end_dt_utc, duration_hours=None, team=None, assignee_user_ids=None):
+        """Apply schedule/team to an existing task and keep booking in sync."""
+        self.ensure_one()
+
+        if not start_dt_utc or not end_dt_utc or end_dt_utc <= start_dt_utc:
+            raise ValidationError(_("The planned start date must be before the planned end date."))
+
+        duration_hours = duration_hours if duration_hours is not None else (end_dt_utc - start_dt_utc).total_seconds() / 3600.0
+        assignee_user_ids = assignee_user_ids or []
+        if not assignee_user_ids and self.user_ids:
+            assignee_user_ids = self.user_ids.ids
+
+        write_vals = {
+            "planned_date_begin": start_dt_utc,
+        }
+
+        if "planned_date_end" in self._fields:
+            write_vals["planned_date_end"] = end_dt_utc
+        if "planned_hours" in self._fields:
+            write_vals["planned_hours"] = duration_hours
+            write_vals["fsm_default_planned_hours"] = self.fsm_default_planned_hours or duration_hours
+        if "date_start" in self._fields:
+            write_vals["date_start"] = start_dt_utc
+        if "date_end" in self._fields:
+            write_vals["date_end"] = end_dt_utc
+        if "date_deadline" in self._fields and end_dt_utc:
+            deadline_dt = end_dt_utc
+            if isinstance(deadline_dt, datetime) and deadline_dt.time() != time.min:
+                deadline_dt = deadline_dt + timedelta(days=1)
+            write_vals["date_deadline"] = fields.Date.to_date(deadline_dt)
+        if "team_id" in self._fields and team:
+            write_vals["team_id"] = team.id
+        if assignee_user_ids and "user_ids" in self._fields:
+            write_vals["user_ids"] = [(6, 0, assignee_user_ids)]
+
+        booking = self.fsm_booking_id.sudo() if self.fsm_booking_id else False
+        if booking:
+            booking.write({
+                "team_id": team.id if team else booking.team_id.id,
+                "start_datetime": start_dt_utc,
+                "end_datetime": end_dt_utc,
+                "allocated_hours": duration_hours,
+                "state": "confirmed",
+            })
+        elif team:
+            booking_ctx = dict(self.env.context)
+            booking_ctx.pop("default_state", None)
+            booking_ctx.pop("state", None)
+            booking = self.env["fsm.booking"].with_context(booking_ctx).sudo().create({
+                "task_id": self.id,
+                "team_id": team.id,
+                "start_datetime": start_dt_utc,
+                "end_datetime": end_dt_utc,
+                "allocated_hours": duration_hours,
+                "state": "confirmed",
+            })
+
+        if booking:
+            write_vals["fsm_booking_id"] = booking.id
+            booking.with_context(self.env.context).action_create_or_update_delivery()
+
+        return self.with_context(fsm_skip_auto_stage=True).sudo().write(write_vals)
 
     def reschedule_clone_to_new_task(self, start_dt_utc, end_dt_utc, team, duration_hours, notes=None, assignee_user_ids=None):
         """Create a new task for the reschedule, archive the current one, and reuse the booking.

@@ -2212,3 +2212,43 @@ msgstr "Calendario de trabajo"
 #: model:ir.model.fields.selection,name:fsm_guided_intake.selection__project_task__fsm_pon_type__xgspon
 msgid "XGS-PON"
 msgstr "XGS-PON"
+
+#. module: fsm_guided_intake
+msgid "GPS Latitude"
+msgstr "Latitud GPS"
+
+#. module: fsm_guided_intake
+msgid "GPS Longitude"
+msgstr "Longitud GPS"
+
+#. module: fsm_guided_intake
+msgid "GPS coordinates updated"
+msgstr "Coordenadas GPS actualizadas"
+
+#. module: fsm_guided_intake
+msgid "Partner/Service Address"
+msgstr "Cliente/Dirección de servicio"
+
+#. module: fsm_guided_intake
+msgid "GPS latitude must be between -90 and 90."
+msgstr "La latitud GPS debe estar entre -90 y 90."
+
+#. module: fsm_guided_intake
+msgid "GPS longitude must be between -180 and 180."
+msgstr "La longitud GPS debe estar entre -180 y 180."
+
+#. module: fsm_guided_intake
+msgid "Customer subscription selected when this task was created through FSM intake."
+msgstr "Suscripción del cliente seleccionada al crear esta tarea mediante el ingreso FSM."
+
+#. module: fsm_guided_intake
+msgid "Edit GPS"
+msgstr "Editar GPS"
+
+#. module: fsm_guided_intake
+msgid "Lock GPS Coordinates"
+msgstr "Bloquear coordenadas GPS"
+
+#. module: fsm_guided_intake
+msgid "Service coordinates copied from the customer or service-address partner."
+msgstr "Coordenadas de servicio copiadas del cliente o de la dirección de servicio."

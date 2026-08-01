@@ -8,6 +8,7 @@
                 <field name="name"/>
                 <field name="lead_user_id"/>
                 <field name="warehouse_id"/>
+                <field name="skill_level"/>
                 <field name="active"/>
             </tree>
         </field>
@@ -24,6 +25,7 @@
                         <field name="active"/>
                         <field name="warehouse_id"/>
                         <field name="calendar_id"/>
+                        <field name="skill_level"/>
                         <field name="lead_user_id"/>
                     </group>
                     <notebook>

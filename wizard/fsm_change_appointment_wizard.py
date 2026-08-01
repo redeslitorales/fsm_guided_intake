@@ -215,7 +215,7 @@ class FsmChangeAppointmentWizard(models.TransientModel):
         hours = self.planned_hours
         if not hours and self.task_id and hasattr(self.task_id, 'planned_hours'):
             hours = self.task_id.planned_hours
-        return max(hours or 0.0, 1.0)
+        return max(hours or 0.0, 1.0 / 60.0)
 
     def _build_end_time_warning_effect(self, end_dt_utc):
         """Return a reminder effect so agents adjust the task end to the booking end."""
@@ -265,10 +265,18 @@ class FsmChangeAppointmentWizard(models.TransientModel):
             preferred = task_type.preferred_team_ids if task_type else self.env["fsm.team"]
             capable = task_type.capable_team_ids if task_type else self.env["fsm.team"]
             teams = (preferred | capable) if (preferred or capable) else self.env["fsm.team"].search([("active", "=", True)])
+        if "active" in self.env["fsm.team"]._fields:
+            teams = teams.filtered(lambda team: team.active)
+        if not teams:
+            return []
 
         lead_minutes = int(self.env["ir.config_parameter"].sudo().get_param(
             "fsm_guided_intake.slot_start_lead_minutes", "0"
         ) or 0)
+        task_type = self.task_id.fsm_task_type_id if self.task_id else False
+        priority_windows = self.env["fsm.task.priority.slot"].get_windows_for_priority(
+            task_type.priority if task_type else False
+        )
 
         return self.env["fsm.slot.engine"].compute_top_slots(
             teams=teams,
@@ -282,6 +290,7 @@ class FsmChangeAppointmentWizard(models.TransientModel):
             buffer_before_mins=self.buffer_before_mins or 0,
             buffer_after_mins=self.buffer_after_mins or 0,
             lead_minutes=lead_minutes,
+            priority_windows=priority_windows,
         )
 
     @api.depends('task_id', 'partner_id', 'planned_hours', 'slot_index', 'search_start_dt', 'date_filter_start', 'date_filter_end', 'time_filter_start', 'time_filter_end', 'filter_use_date', 'filter_use_time', 'team_id')
@@ -311,38 +320,20 @@ class FsmChangeAppointmentWizard(models.TransientModel):
             if (wiz.planned_hours or 0.0) <= 0:
                 continue
 
-            start_dt = wiz.search_start_dt or (fields.Datetime.now() + timedelta(minutes=15))
+            start_dt = wiz.search_start_dt
+            if not start_dt:
+                start_dt = fields.Datetime.context_timestamp(wiz, fields.Datetime.now()).replace(tzinfo=None) + timedelta(minutes=15)
             if wiz.filter_use_date and wiz.date_filter_start:
                 start_dt = datetime.combine(wiz.date_filter_start, time.min)
             search_end = datetime.combine(wiz.date_filter_end, time.max) if (wiz.filter_use_date and wiz.date_filter_end) else None
 
-            slots = []
-            chosen_start = start_dt
-            max_attempts = 84
-            for attempt in range(max_attempts):
-                start_dt_attempt = start_dt + timedelta(hours=attempt * 2.0)
-                start_dt_attempt = wiz._round_to_nearest_10(start_dt_attempt)
-                slots = wiz._find_top_slots(
-                    start_dt_attempt,
-                    limit=3,
-                    date_end=search_end,
-                    time_start=wiz.time_filter_start if wiz.filter_use_time else None,
-                    time_end=wiz.time_filter_end if wiz.filter_use_time else None,
-                )
-                uniq = []
-                seen = set()
-                for s in slots:
-                    key = (s['team'].id if s['team'] else False, s['start'], s['end'])
-                    if key in seen:
-                        continue
-                    seen.add(key)
-                    uniq.append(s)
-                slots = uniq
-                if slots:
-                    chosen_start = start_dt_attempt
-                    break
-
-            wiz.search_start_dt = chosen_start
+            slots = wiz._find_top_slots(
+                start_dt,
+                limit=3,
+                date_end=search_end,
+                time_start=wiz.time_filter_start if wiz.filter_use_time else None,
+                time_end=wiz.time_filter_end if wiz.filter_use_time else None,
+            )
 
             uniq_slots = []
             seen_keys = set()
@@ -387,10 +378,6 @@ class FsmChangeAppointmentWizard(models.TransientModel):
                     slots[2]['start'].strftime("%H:%M"),
                     slots[2]['end'].strftime("%H:%M"),
                 )
-
-            last_end = wiz.slot3_end or wiz.slot1_end or wiz.search_start_dt or fields.Datetime.now()
-            if last_end:
-                wiz.search_start_dt = last_end + timedelta(hours=2.0)
 
     @api.onchange('selected_slot')
     def _onchange_selected_slot(self):
@@ -452,7 +439,8 @@ class FsmChangeAppointmentWizard(models.TransientModel):
                 res['planned_hours'] = task.planned_hours
             else:
                 res['planned_hours'] = task.fsm_default_planned_hours or 1.0 if hasattr(task, 'fsm_default_planned_hours') else 1.0
-            res['search_start_dt'] = task.planned_date_begin or fields.Datetime.now()
+            search_start = task.planned_date_begin or fields.Datetime.now()
+            res['search_start_dt'] = fields.Datetime.context_timestamp(self, search_start).replace(tzinfo=None)
             if task.fsm_booking_id:
                 res['team_id'] = task.fsm_booking_id.team_id.id
             elif hasattr(task, 'team_id'):
@@ -550,8 +538,10 @@ class FsmChangeAppointmentWizard(models.TransientModel):
 
     def action_more_options(self):
         self.ensure_one()
-        base = self.slot3_end or self.slot1_end or fields.Datetime.now()
-        self.search_start_dt = (base or fields.Datetime.now()) + timedelta(hours=2.0)
+        base = self.slot3_end or self.slot1_end or self.search_start_dt
+        if not base:
+            base = fields.Datetime.context_timestamp(self, fields.Datetime.now()).replace(tzinfo=None)
+        self.search_start_dt = base + timedelta(hours=2.0)
         return {
             "type": "ir.actions.act_window",
             "res_model": "fsm.change.appointment.wizard",

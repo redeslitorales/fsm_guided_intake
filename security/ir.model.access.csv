@@ -1,11 +1,21 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_fsm_task_type,fsm.task.type,model_fsm_task_type,fsm_guided_intake.group_fsm_intake_user,1,1,1,1
 access_fsm_task_type_user,fsm.task.type user,model_fsm_task_type,base.group_user,1,0,0,0
+access_fsm_weekday,fsm.weekday,model_fsm_weekday,fsm_guided_intake.group_fsm_intake_user,1,1,1,1
+access_fsm_weekday_user,fsm.weekday user,model_fsm_weekday,base.group_user,1,0,0,0
+access_fsm_task_priority_slot,fsm.task.priority.slot,model_fsm_task_priority_slot,fsm_guided_intake.group_fsm_intake_user,1,1,1,1
+access_fsm_task_priority_slot_user,fsm.task.priority.slot user,model_fsm_task_priority_slot,base.group_user,1,0,0,0
 access_fsm_team,fsm.team,model_fsm_team,fsm_guided_intake.group_fsm_intake_user,1,1,1,1
+access_fsm_team_user,fsm.team user,model_fsm_team,base.group_user,1,0,0,0
 access_fsm_team_shift,fsm.team.shift,model_fsm_team_shift,fsm_guided_intake.group_fsm_intake_user,1,1,1,1
+access_fsm_team_shift_user,fsm.team.shift user,model_fsm_team_shift,base.group_user,1,0,0,0
 access_fsm_booking,fsm.booking,model_fsm_booking,fsm_guided_intake.group_fsm_intake_user,1,1,1,1
+access_fsm_day_reservation,fsm.day.reservation,model_fsm_day_reservation,fsm_guided_intake.group_fsm_intake_user,1,1,1,1
 access_fsm_task_material,fsm.task.material,model_fsm_task_material,fsm_guided_intake.group_fsm_intake_user,1,1,1,1
 access_fsm_task_material_user,fsm.task.material.user,model_fsm_task_material,base.group_user,1,1,1,1
 access_fsm_intake_wizard,fsm.task.intake.wizard,model_fsm_task_intake_wizard,fsm_guided_intake.group_fsm_intake_user,1,1,1,1
 access_fsm_intake_wizard_line,fsm.task.intake.wizard.line,model_fsm_task_intake_wizard_line,fsm_guided_intake.group_fsm_intake_user,1,1,1,1
 access_fsm_change_appointment_wizard,fsm.change.appointment.wizard,model_fsm_change_appointment_wizard,fsm_guided_intake.group_fsm_intake_user,1,1,1,1
+access_fsm_capacity_day,fsm.capacity.day,model_fsm_capacity_day,fsm_guided_intake.group_fsm_intake_user,1,1,1,1
+access_fsm_capacity_day_line,fsm.capacity.day.line,model_fsm_capacity_day_line,fsm_guided_intake.group_fsm_intake_user,1,1,1,1
+access_fsm_dispatch_planner,fsm.dispatch.planner,model_fsm_dispatch_planner,fsm_guided_intake.group_fsm_intake_user,1,1,1,1
