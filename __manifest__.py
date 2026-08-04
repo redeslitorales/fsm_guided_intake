@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Cabal FSM Customizations",
-    "version": "17.0.2.0.16",
+    "version": "17.0.2.0.18",
+    "author": "Bálsamo Labs SAS",
+    "maintainer": "Bálsamo Labs SAS",
     "category": "Services/Field Service",
     "summary": "Guided task intake wizard with task types, team capacity scheduling, and stock reservation on scheduling.",
     "depends": ["project", "industry_fsm", "stock", "sale_management", "fleet", "sale", "iptv_management"],
@@ -26,5 +28,5 @@
     ],
     "installable": True,
     "application": False,
-    "license": "LGPL-3",
+    "license": "OPL-1",
 }

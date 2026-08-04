@@ -1417,8 +1417,8 @@ msgstr "Conectores RJ45"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__fsm_rx_dbm
-msgid "RX (1410) Optical Power (dBm)"
-msgstr "Potencia Óptica (dBm) - 1410"
+msgid "RX (1490) Optical Power (dBm)"
+msgstr "Potencia Óptica RX (1490) (dBm)"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__optics_rx_max
@@ -1881,8 +1881,8 @@ msgstr "Dom-Jue"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_project_task__fsm_tx_dbm
-msgid "TX (1390) Optical Power (dBm)"
-msgstr "Potencia Óptica TX (dBm)"
+msgid "TX (1310) Optical Power (dBm)"
+msgstr "Potencia Óptica TX (1310) (dBm)"
 
 #. module: fsm_guided_intake
 #: model:ir.model.fields,field_description:fsm_guided_intake.field_fsm_task_type__optics_tx_max

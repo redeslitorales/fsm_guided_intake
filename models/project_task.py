@@ -120,8 +120,8 @@ class ProjectTask(models.Model):
     )
     fsm_ont_serial = fields.Char(string="ONT Serial", copy=False)
     fsm_ont_pon_sn = fields.Char(string="ONT PON SN", copy=False)
-    fsm_rx_dbm = fields.Float(string="RX (1410) Optical Power (dBm)", digits=(16, 2), copy=False)
-    fsm_tx_dbm = fields.Float(string="TX (1390) Optical Power (dBm)", digits=(16, 2), copy=False)
+    fsm_rx_dbm = fields.Float(string="RX (1490) Optical Power (dBm)", digits=(16, 2), copy=False)
+    fsm_tx_dbm = fields.Float(string="TX (1310) Optical Power (dBm)", digits=(16, 2), copy=False)
     fsm_optics_in_spec = fields.Boolean(
         string="Optical Levels In Spec",
         compute="_compute_fsm_optics_in_spec",
@@ -480,6 +480,10 @@ class ProjectTask(models.Model):
 
     def write(self, vals):
         skip_auto_stage = self.env.context.get("fsm_skip_auto_stage")
+        force_close_bypass = bool(
+            self.env.su
+            and self.env.context.get("fsm_force_close_bypass_completion")
+        )
         coordinate_fields = {"fsm_latitude", "fsm_longitude"}
         coordinate_updates = {}
         if coordinate_fields.intersection(vals):
@@ -502,7 +506,7 @@ class ProjectTask(models.Model):
         new_stage = False
         if "stage_id" in vals:
             new_stage = self.env["project.task.type"].browse(vals["stage_id"])
-            if new_stage and new_stage.fold:
+            if new_stage and new_stage.fold and not force_close_bypass:
                 for task in self:
                     if task.fsm_task_type_id and task.fsm_task_type_id.enforce_install_validation and not task.fsm_install_complete:
                         raise ValidationError(_(

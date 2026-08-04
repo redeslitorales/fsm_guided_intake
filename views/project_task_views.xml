@@ -147,7 +147,7 @@
                 </page>
 
                 <field name="fsm_requires_fiber_install" invisible="1"/>
-                <page string="Fiber Install" invisible="not fsm_requires_fiber_install">
+                <page string="Instalación de Fibra" invisible="not fsm_requires_fiber_install">
                     <group>
                         <group string="Context">
                             <field name="fsm_task_type_id" readonly="1"/>
