@@ -363,12 +363,18 @@ class ProjectTask(models.Model):
             ]
             task.fsm_install_complete = all(required)
 
-    @api.depends("fsm_default_planned_hours")
+    @api.depends("fsm_default_planned_hours", "allocated_hours")
     def _compute_planned_hours_warning(self):
         for task in self:
             warn = False
             text = False
-            planned = task.planned_hours if "planned_hours" in task._fields else False
+            planned = (
+                task.planned_hours
+                if "planned_hours" in task._fields
+                else task.allocated_hours
+                if "allocated_hours" in task._fields
+                else False
+            )
             if task.fsm_default_planned_hours and planned:
                 if abs(planned - task.fsm_default_planned_hours) > 0.01:
                     warn = True
@@ -396,7 +402,11 @@ class ProjectTask(models.Model):
                 task_type = create_self.env["fsm.task.type"].browse(new_vals["fsm_task_type_id"])
                 if task_type.exists():
                     new_vals["bonus_points"] = task_type.bonus_base_points or 0
-            if "planned_hours" in new_vals or "fsm_default_planned_hours" in new_vals:
+            if {
+                "planned_hours",
+                "allocated_hours",
+                "fsm_default_planned_hours",
+            } & set(new_vals):
                 should_compute_warning = True
 
             coordinate_partner_id = (
@@ -599,7 +609,11 @@ class ProjectTask(models.Model):
         if "fsm_task_type_id" in vals or "sale_order_id" in vals:
             self._link_installation_task_to_subscription()
 
-        if "planned_hours" in vals or "fsm_default_planned_hours" in vals:
+        if {
+            "planned_hours",
+            "allocated_hours",
+            "fsm_default_planned_hours",
+        } & set(vals):
             self._compute_planned_hours_warning()
 
         if team_changed_ids and "user_ids" in self._fields:
@@ -747,16 +761,16 @@ class ProjectTask(models.Model):
             write_vals["planned_date_end"] = end_dt_utc
         if "planned_hours" in self._fields:
             write_vals["planned_hours"] = duration_hours
+        if "allocated_hours" in self._fields:
+            write_vals["allocated_hours"] = duration_hours
+        if "fsm_default_planned_hours" in self._fields:
             write_vals["fsm_default_planned_hours"] = self.fsm_default_planned_hours or duration_hours
         if "date_start" in self._fields:
             write_vals["date_start"] = start_dt_utc
         if "date_end" in self._fields:
             write_vals["date_end"] = end_dt_utc
         if "date_deadline" in self._fields and end_dt_utc:
-            deadline_dt = end_dt_utc
-            if isinstance(deadline_dt, datetime) and deadline_dt.time() != time.min:
-                deadline_dt = deadline_dt + timedelta(days=1)
-            write_vals["date_deadline"] = fields.Date.to_date(deadline_dt)
+            write_vals["date_deadline"] = self._fsm_schedule_deadline_value(end_dt_utc)
         if "team_id" in self._fields and team:
             write_vals["team_id"] = team.id
         if assignee_user_ids and "user_ids" in self._fields:
@@ -789,6 +803,17 @@ class ProjectTask(models.Model):
             booking.with_context(self.env.context).action_create_or_update_delivery()
 
         return self.with_context(fsm_skip_auto_stage=True).sudo().write(write_vals)
+
+    @api.model
+    def _fsm_schedule_deadline_value(self, end_dt_utc):
+        """Adapt the exact appointment end to this database's deadline field type."""
+        deadline_field = self._fields.get("date_deadline")
+        if not deadline_field or not end_dt_utc:
+            return False
+        if deadline_field.type == "datetime":
+            return end_dt_utc
+        end_local = fields.Datetime.context_timestamp(self, end_dt_utc)
+        return fields.Date.to_date(end_local)
 
     def reschedule_clone_to_new_task(self, start_dt_utc, end_dt_utc, team, duration_hours, notes=None, assignee_user_ids=None):
         """Create a new task for the reschedule, archive the current one, and reuse the booking.
@@ -839,16 +864,16 @@ class ProjectTask(models.Model):
             write_vals["planned_date_end"] = end_dt_utc
         if "planned_hours" in self._fields:
             write_vals["planned_hours"] = duration_hours
+        if "allocated_hours" in self._fields:
+            write_vals["allocated_hours"] = duration_hours
+        if "fsm_default_planned_hours" in self._fields:
             write_vals["fsm_default_planned_hours"] = self.fsm_default_planned_hours or duration_hours
         if "date_start" in self._fields:
             write_vals["date_start"] = start_dt_utc
         if "date_end" in self._fields:
             write_vals["date_end"] = end_dt_utc
         if "date_deadline" in self._fields and end_dt_utc:
-            deadline_dt = end_dt_utc
-            if isinstance(deadline_dt, datetime) and deadline_dt.time() != time.min:
-                deadline_dt = deadline_dt + timedelta(days=1)
-            write_vals["date_deadline"] = fields.Date.to_date(deadline_dt)
+            write_vals["date_deadline"] = self._fsm_schedule_deadline_value(end_dt_utc)
         if rescheduled_stage:
             write_vals["stage_id"] = rescheduled_stage.id
         if "team_id" in self._fields and team:

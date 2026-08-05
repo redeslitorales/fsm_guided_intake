@@ -180,7 +180,11 @@ class FsmSlotEngine(models.AbstractModel):
     def _task_fields(self):
         Task = self.env["project.task"]
         start_fields = [f for f in ("planned_date_begin", "date_start") if f in Task._fields]
-        end_fields   = [f for f in ("planned_date_end", "date_end") if f in Task._fields]
+        end_fields = [
+            f
+            for f in ("planned_date_end", "date_deadline", "date_end")
+            if f in Task._fields
+        ]
         team_field = "team_id" if "team_id" in Task._fields else False
         return Task, start_fields, end_fields, team_field
 
@@ -195,6 +199,8 @@ class FsmSlotEngine(models.AbstractModel):
             hours = 0.0
             if "planned_hours" in task._fields and task.planned_hours:
                 hours = float(task.planned_hours)
+            if not hours and "allocated_hours" in task._fields and task.allocated_hours:
+                hours = float(task.allocated_hours)
             if not hours:
                 try:
                     hours = float(getattr(task.fsm_task_type_id, "default_planned_hours", 0.0) or 0.0)

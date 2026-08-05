@@ -208,6 +208,14 @@ class FsmTaskIntakeWizard(models.TransientModel):
         readonly=True,
         string="Selected Appointment",
     )
+    appointment_start = fields.Datetime(
+        string="Appointment Start",
+        help="Exact start date and time that will be written to the task.",
+    )
+    appointment_end = fields.Datetime(
+        string="Appointment End",
+        help="Exact end date and time that will be written to the task.",
+    )
     # Freeze the selected slot to avoid accidental recomputation overrides
     frozen_selected_start = fields.Datetime(string="Frozen Selected Start", readonly=True)
     frozen_selected_end = fields.Datetime(string="Frozen Selected End", readonly=True)
@@ -452,9 +460,27 @@ class FsmTaskIntakeWizard(models.TransientModel):
             combined = (preferred | capable) if (preferred or capable) else self.env["fsm.team"]
             wiz.qualified_team_ids = combined if combined else self.env["fsm.team"].search([("active", "=", True)])
 
-    @api.depends("scheduling_mode", "selected_slot", "slot1_label", "slot2_label", "slot3_label", "date_filter_start")
+    @api.depends(
+        "scheduling_mode",
+        "selected_slot",
+        "slot1_label",
+        "slot2_label",
+        "slot3_label",
+        "date_filter_start",
+        "appointment_start",
+        "appointment_end",
+    )
     def _compute_selected_slot_label(self):
         for wiz in self:
+            if wiz.appointment_start and wiz.appointment_end:
+                start_local = fields.Datetime.context_timestamp(wiz, wiz.appointment_start)
+                end_local = fields.Datetime.context_timestamp(wiz, wiz.appointment_end)
+                wiz.selected_slot_label = _("%s, %s - %s") % (
+                    start_local.strftime("%a, %B %d"),
+                    start_local.strftime("%H:%M"),
+                    end_local.strftime("%H:%M"),
+                )
+                continue
             labels = {
                 "1": wiz.slot1_label or _("No available slot"),
                 "2": wiz.slot2_label or _("No available slot"),
@@ -524,19 +550,6 @@ class FsmTaskIntakeWizard(models.TransientModel):
         if capable:
             return capable[0]
         return self.env["fsm.team"].search([("active", "=", True)], limit=1)
-
-    def _build_end_time_warning_effect(self, end_dt_utc):
-        """Return a small visual reminder to align task end time to the booking end."""
-        self.ensure_one()
-        if not end_dt_utc:
-            return None
-        end_local = fields.Datetime.context_timestamp(self, end_dt_utc)
-        end_label = end_local.strftime("%Y-%m-%d %H:%M") if end_local else ""
-        return {
-            "fadeout": "slow",
-            "message": _("Before saving this task, change the end date and time to %s.") % end_label,
-            "type": "rainbow_man",
-        }
 
     def _find_top_slots(self, start_dt, limit=3, date_end=None, time_start=None, time_end=None):
         self.ensure_one()
@@ -676,6 +689,10 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "frozen_selected_start": start_dt,
             "frozen_selected_end": end_dt,
             "frozen_selected_team_id": team_id.id if team_id else False,
+            # Unlike the slot fields, these are normal Odoo datetimes (UTC in
+            # storage and shown in the user's timezone) and may be edited.
+            "appointment_start": self._to_utc(start_dt) if start_dt else False,
+            "appointment_end": self._to_utc(end_dt) if end_dt else False,
         }
         if self.id:
             self.write(values)
@@ -683,12 +700,56 @@ class FsmTaskIntakeWizard(models.TransientModel):
             self.update(values)
 
     # Navigation
+    def _get_selected_schedule(self):
+        """Return the exact selected interval in local and UTC representations."""
+        self.ensure_one()
+        slot_map = {
+            "1": (self.slot1_start, self.slot1_end, self.slot1_team_id),
+            "2": (self.slot2_start, self.slot2_end, self.slot2_team_id),
+            "3": (self.slot3_start, self.slot3_end, self.slot3_team_id),
+        }
+        slot_start, slot_end, slot_team = slot_map.get(
+            self.selected_slot,
+            (self.slot1_start, self.slot1_end, self.slot1_team_id),
+        )
+
+        if bool(self.appointment_start) != bool(self.appointment_end):
+            raise UserError(_("Enter both the appointment start and end times."))
+
+        if self.appointment_start and self.appointment_end:
+            start_utc = fields.Datetime.to_datetime(self.appointment_start)
+            end_utc = fields.Datetime.to_datetime(self.appointment_end)
+            start_local = fields.Datetime.context_timestamp(self, start_utc).replace(tzinfo=None)
+            end_local = fields.Datetime.context_timestamp(self, end_utc).replace(tzinfo=None)
+        else:
+            if not slot_start or not slot_end:
+                raise UserError(_("No available schedule slot found."))
+            start_local = fields.Datetime.to_datetime(slot_start)
+            end_local = fields.Datetime.to_datetime(slot_end)
+            start_utc = self._to_utc(start_local)
+            end_utc = self._to_utc(end_local)
+
+        if end_utc <= start_utc:
+            raise UserError(_("The appointment end time must be after the start time."))
+
+        duration_hours = (end_utc - start_utc).total_seconds() / 3600.0
+        return start_local, end_local, start_utc, end_utc, slot_team, duration_hours
+
     def action_next(self):
         self.ensure_one()
         order = self._get_step_order()
         idx = order.index(self.state)
         if self.state == "confirm":
             return {"type": "ir.actions.act_window_close"}
+        if self.state == "schedule":
+            has_slot = bool(self.slot1_start or self.slot2_start or self.slot3_start)
+            has_manual_value = bool(self.appointment_start or self.appointment_end)
+            if not has_slot and not has_manual_value:
+                raise UserError(_("No available appointment slots were found."))
+            if has_slot and not self.appointment_start and not self.appointment_end:
+                self._onchange_selected_slot()
+            self._get_selected_schedule()
+
         if not self._is_reschedule_mode():
             if self.state == "customer" and not self.partner_id:
                 raise UserError(_("Please select a customer before continuing."))
@@ -699,8 +760,6 @@ class FsmTaskIntakeWizard(models.TransientModel):
             else:
                 self.state = order[min(idx+1, len(order)-1)]
         else:
-            if self.state == "schedule" and not (self.slot1_start or self.slot2_start or self.slot3_start):
-                raise UserError(_("No available appointment slots were found."))
             if self.state == "schedule" and not self.frozen_selected_start:
                 # Freeze the currently selected slot before the form reloads
                 self._onchange_selected_slot()
@@ -775,19 +834,19 @@ class FsmTaskIntakeWizard(models.TransientModel):
 
         start_dt = False
         end_dt = False
+        start_dt_utc = False
+        end_dt_utc = False
         slot_team = self.env["fsm.team"]
+        duration_hours = self._get_duration_hours()
         if scheduling_mode == "exact":
-            slot_map = {
-                "1": (self.slot1_start, self.slot1_end, self.slot1_team_id),
-                "2": (self.slot2_start, self.slot2_end, self.slot2_team_id),
-                "3": (self.slot3_start, self.slot3_end, self.slot3_team_id),
-            }
-            start_dt, end_dt, slot_team = slot_map.get(
-                self.selected_slot,
-                (self.slot1_start, self.slot1_end, self.slot1_team_id),
-            )
-            if not start_dt or not end_dt:
-                raise UserError(_("No available schedule slot found."))
+            (
+                start_dt,
+                end_dt,
+                start_dt_utc,
+                end_dt_utc,
+                slot_team,
+                duration_hours,
+            ) = self._get_selected_schedule()
 
         # Choose the team from the selected slot so availability and assignment stay aligned.
         if scheduling_mode == "exact":
@@ -853,18 +912,13 @@ class FsmTaskIntakeWizard(models.TransientModel):
                 if "user_ids" in self.env["project.task"]._fields:
                     task_vals["user_ids"] = [(6, 0, assignee_user_ids)]
         task_fields = self.env["project.task"]._fields
-        start_dt = fields.Datetime.to_datetime(start_dt) if start_dt else start_dt
-        duration_hours = self._get_duration_hours()
-        end_dt = start_dt + timedelta(hours=duration_hours) if start_dt else end_dt
-        if start_dt and end_dt and end_dt <= start_dt:
-            end_dt = start_dt + timedelta(minutes=15)
-            duration_hours = 0.25
         if scheduling_mode == "capacity" and service_date:
             # Day model is date-only; keep exact datetime fields unset to satisfy task date constraints.
             start_dt = False
             end_dt = False
-        start_dt_utc = self._to_utc(start_dt) if start_dt else start_dt
-        end_dt_utc = self._to_utc(end_dt) if end_dt else end_dt
+        if scheduling_mode != "exact":
+            start_dt_utc = self._to_utc(start_dt) if start_dt else start_dt
+            end_dt_utc = self._to_utc(end_dt) if end_dt else end_dt
         if scheduling_mode == "exact" and "planned_date_begin" in task_fields:
             task_vals["planned_date_begin"] = start_dt_utc
         if scheduling_mode == "exact" and "planned_date_end" in task_fields:
@@ -877,17 +931,17 @@ class FsmTaskIntakeWizard(models.TransientModel):
             if scheduling_mode == "capacity" and service_date:
                 task_vals["date_deadline"] = service_date
             else:
-                deadline_dt = end_dt or (start_dt + timedelta(hours=duration_hours) if start_dt else False)
-                if deadline_dt:
-                    if isinstance(deadline_dt, datetime) and deadline_dt.time() != time.min:
-                        deadline_dt = deadline_dt + timedelta(days=1)
-                    task_vals["date_deadline"] = fields.Date.to_date(deadline_dt)
-                else:
-                    task_vals["date_deadline"] = False
-        if "planned_hours" in self.env["project.task"]._fields:
+                task_vals["date_deadline"] = self.env[
+                    "project.task"
+                ]._fsm_schedule_deadline_value(end_dt_utc)
+        if "planned_hours" in task_fields:
             task_vals["planned_hours"] = duration_hours
-            # Pass through default planned hours for comparison
-            task_vals["fsm_default_planned_hours"] = duration_hours
+        if "allocated_hours" in task_fields:
+            task_vals["allocated_hours"] = duration_hours
+        if "fsm_default_planned_hours" in task_fields:
+            # Keep the task-type duration as the baseline so a manually edited
+            # interval can still be identified as a deliberate override.
+            task_vals["fsm_default_planned_hours"] = self.planned_hours or duration_hours
         if self.subscription_id and "fsm_subscription_id" in task_fields:
             task_vals["fsm_subscription_id"] = self.subscription_id.id
         if "sale_order_id" in task_fields:
@@ -941,7 +995,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
 
         # Reservation vs exact booking: default to capacity-based reservation
         if scheduling_mode == "exact":
-            alloc_hours = (end_dt - start_dt).total_seconds() / 3600.0
+            alloc_hours = duration_hours
             try:
                 clean_ctx = dict(self.env.context)
                 clean_ctx.pop("default_state", None)
@@ -985,9 +1039,6 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "view_mode": "form",
             "res_id": task.id,
         }
-        warning_effect = self._build_end_time_warning_effect(end_dt_utc)
-        if warning_effect:
-            action["effect"] = warning_effect
         return action
 
     def _action_reschedule_task(self):
@@ -996,23 +1047,14 @@ class FsmTaskIntakeWizard(models.TransientModel):
         if not task:
             raise UserError(_("No task to reschedule was provided."))
 
-        # Prefer frozen values captured on the schedule step to avoid later recomputes
-        start_dt = self.frozen_selected_start
-        end_dt = self.frozen_selected_end
-        slot_team = self.frozen_selected_team_id
-        if not start_dt or not end_dt:
-            slot_map = {
-                "1": (self.slot1_start, self.slot1_end, self.slot1_team_id),
-                "2": (self.slot2_start, self.slot2_end, self.slot2_team_id),
-                "3": (self.slot3_start, self.slot3_end, self.slot3_team_id),
-            }
-            start_dt, end_dt, slot_team = slot_map.get(self.selected_slot, (self.slot1_start, self.slot1_end, self.slot1_team_id))
-        if not start_dt or not end_dt:
-            raise UserError(_("Please pick an available appointment slot."))
-
-        # Some deployments may not include planned_hours on project.task; guard access
-        duration_hours = task.planned_hours if "planned_hours" in task._fields and task.planned_hours else self._get_duration_hours()
-        end_dt = start_dt + timedelta(hours=duration_hours)
+        (
+            start_dt,
+            end_dt,
+            start_dt_utc,
+            end_dt_utc,
+            slot_team,
+            duration_hours,
+        ) = self._get_selected_schedule()
 
         team = slot_team or self.team_id
         if not team and getattr(task, "fsm_booking_id", False):
@@ -1032,9 +1074,6 @@ class FsmTaskIntakeWizard(models.TransientModel):
             assignee_user_ids = task.user_ids.ids
         assignee_user_ids = list(dict.fromkeys(assignee_user_ids))
 
-        start_dt_utc = self._to_utc(start_dt)
-        end_dt_utc = self._to_utc(end_dt)
-
         new_task = task.reschedule_clone_to_new_task(
             start_dt_utc=start_dt_utc,
             end_dt_utc=end_dt_utc,
@@ -1050,9 +1089,6 @@ class FsmTaskIntakeWizard(models.TransientModel):
             "res_id": new_task.id,
             "view_mode": "form",
         }
-        warning_effect = self._build_end_time_warning_effect(end_dt_utc)
-        if warning_effect:
-            action["effect"] = warning_effect
         return action
 
     @api.model

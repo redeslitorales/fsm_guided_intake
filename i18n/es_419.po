@@ -2252,3 +2252,35 @@ msgstr "Bloquear coordenadas GPS"
 #. module: fsm_guided_intake
 msgid "Service coordinates copied from the customer or service-address partner."
 msgstr "Coordenadas de servicio copiadas del cliente o de la dirección de servicio."
+
+#. module: fsm_guided_intake
+msgid "Appointment Start"
+msgstr "Inicio de la cita"
+
+#. module: fsm_guided_intake
+msgid "Appointment End"
+msgstr "Fin de la cita"
+
+#. module: fsm_guided_intake
+msgid "Appointment Times"
+msgstr "Horario de la cita"
+
+#. module: fsm_guided_intake
+msgid "Exact start date and time that will be written to the task."
+msgstr "Fecha y hora exactas de inicio que se guardarán en la tarea."
+
+#. module: fsm_guided_intake
+msgid "Exact end date and time that will be written to the task."
+msgstr "Fecha y hora exactas de finalización que se guardarán en la tarea."
+
+#. module: fsm_guided_intake
+msgid "Selecting an available slot fills both values. You may adjust them before continuing; both times are saved on the task and its booking."
+msgstr "Al seleccionar un horario disponible se completan ambos valores. Puede ajustarlos antes de continuar; ambas horas se guardan en la tarea y en su reserva."
+
+#. module: fsm_guided_intake
+msgid "Enter both the appointment start and end times."
+msgstr "Ingrese tanto la hora de inicio como la hora de finalización de la cita."
+
+#. module: fsm_guided_intake
+msgid "The appointment end time must be after the start time."
+msgstr "La hora de finalización de la cita debe ser posterior a la hora de inicio."

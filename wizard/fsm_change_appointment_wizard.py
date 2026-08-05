@@ -435,8 +435,10 @@ class FsmChangeAppointmentWizard(models.TransientModel):
                 res['planned_date_begin'] = fields.Datetime.now()
             
             # Get planned_hours if field exists on task
-            if hasattr(task, 'planned_hours') and task.planned_hours:
+            if 'planned_hours' in task._fields and task.planned_hours:
                 res['planned_hours'] = task.planned_hours
+            elif 'allocated_hours' in task._fields and task.allocated_hours:
+                res['planned_hours'] = task.allocated_hours
             else:
                 res['planned_hours'] = task.fsm_default_planned_hours or 1.0 if hasattr(task, 'fsm_default_planned_hours') else 1.0
             search_start = task.planned_date_begin or fields.Datetime.now()

@@ -139,6 +139,14 @@
                             <button name="action_more_options" string="Show More Times" translate="True"
                                     type="object" class="btn-link"/>
                         </group>
+
+                        <group string="Appointment Times" class="o_colspan_2">
+                            <field name="appointment_start"/>
+                            <field name="appointment_end"/>
+                            <div class="alert alert-info o_colspan_2" role="alert">
+                                <i class="fa fa-info-circle"/> Selecting an available slot fills both values. You may adjust them before continuing; both times are saved on the task and its booking.
+                            </div>
+                        </group>
                     </group>
 
                     <!-- Step 5: Notes -->
@@ -188,6 +196,8 @@
                             <field name="service_address_id" readonly="1" colspan="2" class="o_colspan_2"
                                    invisible="not service_address_id"/>
                             <field name="selected_slot_label" readonly="1" string="Schedule Selection" colspan="2" class="o_colspan_2"/>
+                            <field name="appointment_start" readonly="1" colspan="2" class="o_colspan_2"/>
+                            <field name="appointment_end" readonly="1" colspan="2" class="o_colspan_2"/>
                             <field name="team_id" readonly="1" colspan="2" class="o_colspan_2"
                                    invisible="not team_id"/>
                         </group>
