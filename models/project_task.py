@@ -34,6 +34,24 @@ class ProjectTask(models.Model):
     fsm_service_address_id = fields.Many2one("res.partner", string="Service Address", copy=False)
     fsm_service_zone_name = fields.Char(string="Service Zone", copy=False)
     fsm_booking_id = fields.Many2one("fsm.booking", string="Booking", copy=False)
+    fsm_rescheduled_from_task_id = fields.Many2one(
+        "project.task",
+        string="Previous Appointment",
+        copy=False,
+        readonly=True,
+        index=True,
+        ondelete="set null",
+        help="Original field-service task from which this replacement was created.",
+    )
+    fsm_rescheduled_to_task_id = fields.Many2one(
+        "project.task",
+        string="Replacement Appointment",
+        copy=False,
+        readonly=True,
+        index=True,
+        ondelete="set null",
+        help="Current replacement task created when this appointment was rescheduled.",
+    )
     fsm_subscription_id = fields.Many2one(
         "sale.order",
         string="Subscription",
@@ -815,13 +833,130 @@ class ProjectTask(models.Model):
         end_local = fields.Datetime.context_timestamp(self, end_dt_utc)
         return fields.Date.to_date(end_local)
 
+    def _fsm_reschedule_copy_defaults(
+        self,
+        start_dt_utc,
+        end_dt_utc,
+        duration_hours,
+        team,
+        assignee_user_ids,
+        description,
+    ):
+        """Return explicit defaults for a clean replacement appointment."""
+        self.ensure_one()
+        defaults = {
+            "name": self.name,
+            "active": True,
+            "description": description,
+            "stage_id": self.stage_id.id,
+            "planned_date_begin": start_dt_utc,
+            "fsm_booking_id": False,
+            "fsm_rescheduled_from_task_id": self.id,
+            "fsm_rescheduled_to_task_id": False,
+        }
+
+        stable_fields = (
+            "fsm_task_type_id",
+            "fsm_service_address_id",
+            "fsm_service_zone_name",
+            "fsm_subscription_id",
+            "fsm_latitude",
+            "fsm_longitude",
+            "fsm_default_planned_hours",
+            "fsm_install_type",
+            "fsm_pon_type",
+        )
+        for field_name in stable_fields:
+            if field_name not in self._fields:
+                continue
+            value = self[field_name]
+            field = self._fields[field_name]
+            defaults[field_name] = value.id if field.type == "many2one" else value
+
+        if "planned_date_end" in self._fields:
+            defaults["planned_date_end"] = end_dt_utc
+        if "planned_hours" in self._fields:
+            defaults["planned_hours"] = duration_hours
+        if "allocated_hours" in self._fields:
+            defaults["allocated_hours"] = duration_hours
+        if "date_start" in self._fields:
+            defaults["date_start"] = start_dt_utc
+        if "date_end" in self._fields:
+            defaults["date_end"] = end_dt_utc
+        if "date_deadline" in self._fields:
+            defaults["date_deadline"] = self._fsm_schedule_deadline_value(end_dt_utc)
+        if "team_id" in self._fields:
+            defaults["team_id"] = team.id if team else False
+        if "user_ids" in self._fields:
+            defaults["user_ids"] = [(6, 0, assignee_user_ids)]
+        if "state" in self._fields:
+            defaults["state"] = "01_in_progress"
+        if "fsm_done" in self._fields:
+            defaults["fsm_done"] = False
+
+        # copy=False protects most of these fields today. Keeping the explicit
+        # reset list here prevents a future addon change from carrying visit-
+        # specific operational state into a replacement appointment.
+        operational_fields = (
+            "appointment_confirmed",
+            "appointment_confirm_token",
+            "appointment_reschedule_requested",
+            "appointment_reschedule_requested_at",
+            "appointment_reschedule_token",
+            "technician_ready_confirmed",
+            "technician_ready_confirm_token",
+            "technician_ready_confirmed_at",
+            "fsm_delay_notice_sent",
+            "fsm_delay_notice_datetime",
+            "fsm_delay_notice_whatsapp_id",
+            "fsm_en_route_notice_sent",
+            "fsm_en_route_notice_datetime",
+            "fsm_en_route_notice_whatsapp_id",
+            "fsm_arrival_datetime",
+            "fsm_departure_datetime",
+            "fsm_work_started_at",
+        )
+        for field_name in operational_fields:
+            if field_name in self._fields:
+                defaults[field_name] = False
+
+        if "fsm_material_ids" in self._fields:
+            material_commands = []
+            for material in self.fsm_material_ids:
+                material_values = material.copy_data()[0]
+                material_values.pop("task_id", None)
+                material_commands.append((0, 0, material_values))
+            defaults["fsm_material_ids"] = material_commands
+
+        return defaults
+
+    def _fsm_after_reschedule_replacement(self, replacement_task):
+        """Extension hook for addons that own pointers to the current task."""
+        self.ensure_one()
+        replacement_task.ensure_one()
+        return True
+
     def reschedule_clone_to_new_task(self, start_dt_utc, end_dt_utc, team, duration_hours, notes=None, assignee_user_ids=None):
-        """Create a new task for the reschedule, archive the current one, and reuse the booking.
+        """Create a clean replacement, preserve/archive the original, and move booking.
 
         The caller must pass UTC-naive datetimes to avoid double conversions. Booking (and picking)
         are moved forward to the new task to prevent duplicate stock reservations.
         """
         self.ensure_one()
+
+        if not start_dt_utc or not end_dt_utc or end_dt_utc <= start_dt_utc:
+            raise ValidationError(_("The planned start date must be before the planned end date."))
+
+        self.check_access_rights("write")
+        self.check_access_rule("write")
+        self.env.cr.execute(
+            "SELECT id FROM project_task WHERE id = %s FOR UPDATE", [self.id]
+        )
+        self.invalidate_recordset()
+        if self.fsm_rescheduled_to_task_id:
+            raise UserError(_(
+                "This appointment was already rescheduled to %s."
+            ) % self.fsm_rescheduled_to_task_id.display_name)
 
         # Build audit note
         tz_name = self.env.context.get("tz") or self.env.user.tz or "UTC"
@@ -852,39 +987,38 @@ class ProjectTask(models.Model):
         if not assignee_user_ids and self.user_ids:
             assignee_user_ids = self.user_ids.ids
 
-        rescheduled_stage = self._fsm_find_stage(["rescheduled"])
+        rescheduled_stage = self._fsm_find_stage([
+            "rescheduled",
+            "reprogrammed",
+            "reprogramado",
+            "reprogramada",
+            "reagendado",
+            "reagendada",
+        ])
+        if not rescheduled_stage:
+            raise UserError(_(
+                "No 'Rescheduled' task stage is configured for this Field Service project."
+            ))
 
-        write_vals = {
-            "description": (self.description or "") + note_text,
-            "fsm_service_zone_name": self.fsm_service_zone_name,
-            "planned_date_begin": start_dt_utc,
-        }
+        replacement_values = self._fsm_reschedule_copy_defaults(
+            start_dt_utc=start_dt_utc,
+            end_dt_utc=end_dt_utc,
+            duration_hours=duration_hours,
+            team=team,
+            assignee_user_ids=assignee_user_ids,
+            description=(self.description or "") + note_text,
+        )
+        replacement_task = self.with_context(
+            fsm_skip_auto_stage=True,
+        ).copy(default=replacement_values)
 
-        if "planned_date_end" in self._fields:
-            write_vals["planned_date_end"] = end_dt_utc
-        if "planned_hours" in self._fields:
-            write_vals["planned_hours"] = duration_hours
-        if "allocated_hours" in self._fields:
-            write_vals["allocated_hours"] = duration_hours
-        if "fsm_default_planned_hours" in self._fields:
-            write_vals["fsm_default_planned_hours"] = self.fsm_default_planned_hours or duration_hours
-        if "date_start" in self._fields:
-            write_vals["date_start"] = start_dt_utc
-        if "date_end" in self._fields:
-            write_vals["date_end"] = end_dt_utc
-        if "date_deadline" in self._fields and end_dt_utc:
-            write_vals["date_deadline"] = self._fsm_schedule_deadline_value(end_dt_utc)
-        if rescheduled_stage:
-            write_vals["stage_id"] = rescheduled_stage.id
-        if "team_id" in self._fields and team:
-            write_vals["team_id"] = team.id
-        if assignee_user_ids and "user_ids" in self._fields:
-            write_vals["user_ids"] = [(6, 0, assignee_user_ids)]
-
-        # Update booking in place to preserve delivery links
+        # Move the booking in place so its stock picking is neither duplicated
+        # nor disconnected. The original task keeps its historical material
+        # lines; the replacement gets clean copies for the active visit.
         booking = self.fsm_booking_id.sudo() if self.fsm_booking_id else False
         if booking:
             booking.write({
+                "task_id": replacement_task.id,
                 "team_id": team.id if team else booking.team_id.id,
                 "start_datetime": start_dt_utc,
                 "end_datetime": end_dt_utc,
@@ -896,7 +1030,7 @@ class ProjectTask(models.Model):
             booking_ctx.pop("default_state", None)
             booking_ctx.pop("state", None)
             booking = self.env["fsm.booking"].with_context(booking_ctx).sudo().create({
-                "task_id": self.id,
+                "task_id": replacement_task.id,
                 "team_id": team.id,
                 "start_datetime": start_dt_utc,
                 "end_datetime": end_dt_utc,
@@ -904,17 +1038,52 @@ class ProjectTask(models.Model):
                 "state": "confirmed",
             })
         if booking:
-            write_vals["fsm_booking_id"] = booking.id
+            replacement_task.sudo().write({"fsm_booking_id": booking.id})
+            if booking.picking_id:
+                booking.picking_id.sudo().write({
+                    "origin": replacement_task.display_name,
+                })
             booking.with_context(self.env.context).action_create_or_update_delivery()
 
-        self.with_context(fsm_skip_auto_stage=True).sudo().write(write_vals)
+        self._fsm_after_reschedule_replacement(replacement_task)
+
+        original_values = {
+            "active": False,
+            "stage_id": rescheduled_stage.id,
+            # _write receives database-level values; an empty many2one must be
+            # SQL NULL rather than the ORM-facing False value.
+            "fsm_booking_id": None,
+            "fsm_rescheduled_to_task_id": replacement_task.id,
+        }
+        if "state" in self._fields:
+            original_values["state"] = "1_canceled"
+        if "fsm_done" in self._fields:
+            original_values["fsm_done"] = False
+        self.sudo()._write(original_values)
+        self.invalidate_recordset(list(original_values))
 
         self.message_post(
-            body=_("This task was rescheduled. Previous time: %s, New time: %s") % (old_start_str, new_start_str),
+            body=_(
+                "This appointment was rescheduled. Previous time: %(old)s, "
+                "replacement: %(replacement)s at %(new)s."
+            ) % {
+                "old": old_start_str,
+                "replacement": replacement_task.display_name,
+                "new": new_start_str,
+            },
+            message_type="comment",
+        )
+        replacement_task.message_post(
+            body=_(
+                "Created as the replacement for %(original)s. New appointment: %(new)s."
+            ) % {
+                "original": self.display_name,
+                "new": new_start_str,
+            },
             message_type="comment",
         )
 
-        return self
+        return replacement_task
 
     def send_whatsapp(self):
         """Stub method to satisfy enterprise FSM view validation.

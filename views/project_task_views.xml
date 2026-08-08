@@ -94,6 +94,16 @@
                        readonly="1"
                        invisible="not is_fsm"
                        options="{'no_create': True}"/>
+                <field name="fsm_rescheduled_from_task_id"
+                       readonly="1"
+                       invisible="not fsm_rescheduled_from_task_id"
+                       context="{'active_test': False}"
+                       options="{'no_create': True}"/>
+                <field name="fsm_rescheduled_to_task_id"
+                       readonly="1"
+                       invisible="not fsm_rescheduled_to_task_id"
+                       context="{'active_test': False}"
+                       options="{'no_create': True}"/>
                 <field name="fsm_geo_edit_mode" invisible="1"/>
                 <field name="fsm_latitude"
                        string="GPS Latitude"
