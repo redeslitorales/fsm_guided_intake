@@ -244,14 +244,16 @@ class ProjectTask(models.Model):
         """
         Stage = self.env["project.task.type"]
         for name in names:
-            domain = [("name", "ilike", name)]
+            # Exact case-insensitive matching prevents "Scheduled" from
+            # incorrectly selecting the "To Be Scheduled" stage.
+            domain = [("name", "=ilike", name)]
             if self.project_id:
                 domain = [("project_ids", "in", self.project_id.id)] + domain
             stage = Stage.search(domain, limit=1)
             if stage:
                 return stage
         for name in names:
-            stage = Stage.search([("name", "ilike", name)], limit=1)
+            stage = Stage.search([("name", "=ilike", name)], limit=1)
             if stage:
                 return stage
         return False
@@ -860,6 +862,7 @@ class ProjectTask(models.Model):
             "fsm_service_address_id",
             "fsm_service_zone_name",
             "fsm_subscription_id",
+            "sale_order_id",
             "fsm_latitude",
             "fsm_longitude",
             "fsm_default_planned_hours",
@@ -1011,6 +1014,7 @@ class ProjectTask(models.Model):
         replacement_task = self.with_context(
             fsm_skip_auto_stage=True,
         ).copy(default=replacement_values)
+        replacement_task._fsm_apply_scheduled_stage()
 
         # Move the booking in place so its stock picking is neither duplicated
         # nor disconnected. The original task keeps its historical material

@@ -1074,6 +1074,26 @@ class FsmTaskIntakeWizard(models.TransientModel):
             assignee_user_ids = task.user_ids.ids
         assignee_user_ids = list(dict.fromkeys(assignee_user_ids))
 
+        # The contract workflow also uses reschedule_task_id to schedule the
+        # already-created installation task for the first time.  Scheduling an
+        # undated task is not a reschedule: update it in place so its sales-order
+        # link and workflow state are preserved.
+        if not task.planned_date_begin:
+            task._write_scheduled_datetime(
+                start_dt_utc=start_dt_utc,
+                end_dt_utc=end_dt_utc,
+                duration_hours=duration_hours,
+                team=team,
+                assignee_user_ids=assignee_user_ids,
+            )
+            task._fsm_apply_scheduled_stage()
+            return {
+                "type": "ir.actions.act_window",
+                "res_model": "project.task",
+                "res_id": task.id,
+                "view_mode": "form",
+            }
+
         new_task = task.reschedule_clone_to_new_task(
             start_dt_utc=start_dt_utc,
             end_dt_utc=end_dt_utc,
