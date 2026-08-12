@@ -320,6 +320,37 @@ class FsmSlotEngine(models.AbstractModel):
         return "".join(ch for ch in text if not unicodedata.combining(ch)).strip().lower()
 
     def _slot_task_blocks_availability(self, task):
+        """Return whether a scheduled task consumes team availability.
+
+        Explicit operational status is authoritative.  A stage can be stale
+        after a task is put back on the schedule, so a folded/closed-looking
+        stage must not release capacity while the task is still active,
+        current, and explicitly not done or cancelled.
+        """
+        if "active" in task._fields and not task.active:
+            return False
+        if (
+            "fsm_rescheduled_to_task_id" in task._fields
+            and task.fsm_rescheduled_to_task_id
+        ):
+            return False
+        if "fsm_done" in task._fields and task.fsm_done:
+            return False
+
+        terminal_states = {"1_done", "1_canceled"}
+        state = task.state if "state" in task._fields else False
+        if state in terminal_states:
+            return False
+
+        # When operational status fields exist and say the task is open, they
+        # take precedence over a stale folded/completed stage.
+        has_explicit_open_status = (
+            ("fsm_done" in task._fields and not task.fsm_done)
+            or ("state" in task._fields and state and state not in terminal_states)
+        )
+        if has_explicit_open_status:
+            return True
+
         stage = task.stage_id
         if not stage:
             return True
