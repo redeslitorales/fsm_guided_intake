@@ -2284,3 +2284,23 @@ msgstr "Ingrese tanto la hora de inicio como la hora de finalización de la cita
 #. module: fsm_guided_intake
 msgid "The appointment end time must be after the start time."
 msgstr "La hora de finalización de la cita debe ser posterior a la hora de inicio."
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_project_task_form_fiber_install
+msgid "CPE Device"
+msgstr "Dispositivo CPE"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_project_task_form_fiber_install
+msgid "TV Box Serial Number"
+msgstr "Número de serie del TV Box"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_project_task_form_fiber_install
+msgid "TV Box CPE Asset"
+msgstr "Activo CPE del TV Box"
+
+#. module: fsm_guided_intake
+#: model_terms:ir.ui.view,arch_db:fsm_guided_intake.view_project_task_form_fiber_install
+msgid "Register TV Box"
+msgstr "Registrar TV Box"

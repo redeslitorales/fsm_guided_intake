@@ -230,8 +230,18 @@
                         <button name="action_refresh_iptv_from_subscription"
                                 string="Refresh from Subscription"
                                 type="object"
-                                class="oe_highlight"
+                                class="btn btn-outline-primary btn-sm px-3 text-nowrap"
                                 icon="fa-refresh"/>
+                    </group>
+
+                    <group string="CPE Device">
+                        <field name="iptv_cpe_stb_id" string="TV Box Serial Number"/>
+                        <field name="iptv_cpe_stb_asset_id" string="TV Box CPE Asset" readonly="1"/>
+                        <button name="action_register_iptv_tv_box_cpe_asset"
+                                type="object"
+                                string="Register TV Box"
+                                class="btn btn-primary btn-sm px-3 text-nowrap"
+                                icon="fa-cube"/>
                     </group>
 
                     <group string="STBs">
