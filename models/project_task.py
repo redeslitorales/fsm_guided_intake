@@ -213,7 +213,7 @@ class ProjectTask(models.Model):
     fsm_task_count = fields.Integer(
         string="Tasks",
         default=1,
-        aggregator="sum",
+        group_operator="sum",
         readonly=True,
     )
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Cabal FSM Customizations",
-    "version": "17.0.2.0.32",
+    "version": "17.0.2.0.33",
     "author": "Bálsamo Labs SAS",
     "maintainer": "Bálsamo Labs SAS",
     "category": "Services/Field Service",
