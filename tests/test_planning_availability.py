@@ -89,6 +89,47 @@ class TestPlanningAvailability(TransactionCase):
         self.assertEqual(len(slots), 1)
         self.assertEqual(slots[0]["start"], datetime(2026, 8, 17, 15, 0))
 
+    def test_unsaved_guided_wizard_resolves_virtual_team_records(self):
+        """The first modal render must work before the transient is saved."""
+        self._shift(
+            self.employee_one,
+            datetime(2026, 8, 17, 21, 0),
+            datetime(2026, 8, 17, 23, 0),
+        )
+        project = self.env["project.project"].create({
+            "name": "Virtual Wizard Planning Test",
+            "is_fsm": True,
+            "company_id": self.env.company.id,
+        })
+        task_type = self.env["fsm.task.type"].create({
+            "name": "Virtual Wizard Planning Task",
+            "project_id": project.id,
+            "default_planned_hours": 1.0,
+            "preferred_team_ids": [(6, 0, self.team.ids)],
+        })
+        partner = self.env["res.partner"].create({
+            "name": "Virtual Wizard Planning Customer",
+        })
+        wizard = self.env["fsm.task.intake.wizard"].with_context(
+            tz="America/El_Salvador",
+        ).new({
+            "partner_id": partner.id,
+            "task_type_id": task_type.id,
+            "search_start_dt": datetime(2026, 8, 17, 15, 0),
+        })
+
+        wizard._compute_slots()
+
+        self.assertEqual(wizard.qualified_team_ids._origin, self.team)
+        self.assertEqual(wizard.slot1_team_id._origin, self.team)
+        self.assertGreaterEqual(
+            wizard.slot1_start, datetime(2026, 8, 17, 15, 0)
+        )
+        self.assertLessEqual(
+            wizard.slot1_end, datetime(2026, 8, 17, 17, 0)
+        )
+        self.assertTrue(wizard.slot1_label)
+
     def test_draft_planning_shift_does_not_create_availability(self):
         self._shift(
             self.employee_one,

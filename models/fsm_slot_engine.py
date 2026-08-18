@@ -560,6 +560,11 @@ class FsmSlotEngine(models.AbstractModel):
         """
         Returns: list of {"start": local_naive_dt, "end": local_naive_dt, "team": fsm.team}
         """
+        # Unsaved Odoo wizards wrap relational values in ``NewId`` records.
+        # Their ids do not compare equal to the integer team ids used as keys
+        # by the Planning window maps. Resolve them at this public boundary so
+        # an initial form onchange behaves like a saved wizard record.
+        teams = teams._origin.exists()
         if not teams:
             return []
         start_dt_local = start_dt_local or fields.Datetime.context_timestamp(self, fields.Datetime.now()).replace(tzinfo=None)

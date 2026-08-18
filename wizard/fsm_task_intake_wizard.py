@@ -641,6 +641,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
                 seen_keys.add(key)
                 uniq_slots.append(s)
             slots = uniq_slots
+            preferred_team_ids = set(wiz.preferred_team_ids._origin.ids)
 
             # Format labels with proper datetime display
             if len(slots) > 0:
@@ -648,7 +649,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
                 wiz.slot1_end = slots[0]["end"]
                 wiz.slot1_team_id = slots[0]["team"]
                 wiz.slot1_team_label = slots[0]["team"].lead_user_id.name or slots[0]["team"].name
-                wiz.slot1_is_preferred = slots[0]["team"] in wiz.preferred_team_ids
+                wiz.slot1_is_preferred = slots[0]["team"].id in preferred_team_ids
                 wiz.slot1_label = _("%s, %s - %s") % (
                     slots[0]["start"].strftime("%a, %B %d"),
                     slots[0]["start"].strftime("%H:%M"),
@@ -659,7 +660,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
                 wiz.slot2_end = slots[1]["end"]
                 wiz.slot2_team_id = slots[1]["team"]
                 wiz.slot2_team_label = slots[1]["team"].lead_user_id.name or slots[1]["team"].name
-                wiz.slot2_is_preferred = slots[1]["team"] in wiz.preferred_team_ids
+                wiz.slot2_is_preferred = slots[1]["team"].id in preferred_team_ids
                 wiz.slot2_label = _("%s, %s - %s") % (
                     slots[1]["start"].strftime("%a, %B %d"),
                     slots[1]["start"].strftime("%H:%M"),
@@ -670,7 +671,7 @@ class FsmTaskIntakeWizard(models.TransientModel):
                 wiz.slot3_end = slots[2]["end"]
                 wiz.slot3_team_id = slots[2]["team"]
                 wiz.slot3_team_label = slots[2]["team"].lead_user_id.name or slots[2]["team"].name
-                wiz.slot3_is_preferred = slots[2]["team"] in wiz.preferred_team_ids
+                wiz.slot3_is_preferred = slots[2]["team"].id in preferred_team_ids
                 wiz.slot3_label = _("%s, %s - %s") % (
                     slots[2]["start"].strftime("%a, %B %d"),
                     slots[2]["start"].strftime("%H:%M"),
