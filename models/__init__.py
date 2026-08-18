@@ -4,3 +4,4 @@ from . import product
 from . import fsm_capacity
 from . import fsm_day_reservation
 from . import fsm_dispatch_planner
+from . import planning_slot

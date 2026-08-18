@@ -32,4 +32,15 @@
         <field name="numbercall">-1</field>
         <field name="active">True</field>
     </record>
+
+    <record id="ir_cron_fsm_sync_technician_planning_shifts" model="ir.cron">
+        <field name="name">FSM Sync Technician Planning Shifts</field>
+        <field name="model_id" ref="planning.model_planning_slot"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_sync_fsm_technician_shifts()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">weeks</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+    </record>
 </odoo>

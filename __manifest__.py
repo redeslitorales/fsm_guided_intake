@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Cabal FSM Customizations",
-    "version": "17.0.2.0.33",
+    "version": "17.0.2.0.34",
     "author": "Bálsamo Labs SAS",
     "maintainer": "Bálsamo Labs SAS",
     "category": "Services/Field Service",
     "summary": "Guided task intake wizard with task types, team capacity scheduling, and stock reservation on scheduling.",
-    "depends": ["project", "industry_fsm", "stock", "sale_management", "fleet", "sale", "iptv_management"],
+    "depends": ["project", "industry_fsm", "planning", "stock", "sale_management", "fleet", "sale", "iptv_management"],
     "data": [
         "security/security.xml",
         "security/ir.model.access.csv",
         "data/fsm_task_coordinate_migration.xml",
         "data/fsm_weekday_data.xml",
+        "data/fsm_planning_data.xml",
         "wizard/fsm_task_intake_wizard_views.xml",
         "views/fsm_task_type_views.xml",
         "views/fsm_task_priority_slot_views.xml",
