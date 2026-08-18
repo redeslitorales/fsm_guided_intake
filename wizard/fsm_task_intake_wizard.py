@@ -899,16 +899,13 @@ class FsmTaskIntakeWizard(models.TransientModel):
             task_vals["fsm_pon_type"] = self.task_type_id.default_pon_type
         # In day/capacity mode dispatch will assign team and users later.
         if scheduling_mode == "exact":
-            assignee_user_ids = []
-            if team and team.lead_user_id:
-                assignee_user_ids.append(team.lead_user_id.id)
-            if team and team.member_ids:
-                member_users = team.member_ids.mapped("user_id").filtered(lambda u: u)
-                assignee_user_ids += member_users.ids
-            assignee_user_ids = list(dict.fromkeys(assignee_user_ids))  # dedupe while preserving order
-            if assignee_user_ids:
+            slot_engine = self.env["fsm.slot.engine"]
+            assignee_user_ids = slot_engine.get_team_users_for_interval_utc(
+                team, start_dt_utc, end_dt_utc
+            ).ids
+            if assignee_user_ids or slot_engine._availability_source() == "planning":
                 if "user_id" in task_vals or "user_id" in self.env["project.task"]._fields:
-                    task_vals["user_id"] = assignee_user_ids[0]
+                    task_vals["user_id"] = assignee_user_ids[0] if assignee_user_ids else False
                 if "user_ids" in self.env["project.task"]._fields:
                     task_vals["user_ids"] = [(6, 0, assignee_user_ids)]
         task_fields = self.env["project.task"]._fields

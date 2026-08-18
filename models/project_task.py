@@ -770,7 +770,12 @@ class ProjectTask(models.Model):
 
         duration_hours = duration_hours if duration_hours is not None else (end_dt_utc - start_dt_utc).total_seconds() / 3600.0
         assignee_user_ids = assignee_user_ids or []
-        if not assignee_user_ids and self.user_ids:
+        slot_engine = self.env["fsm.slot.engine"]
+        if team and slot_engine._availability_source() == "planning":
+            assignee_user_ids = slot_engine.get_team_users_for_interval_utc(
+                team, start_dt_utc, end_dt_utc
+            ).ids
+        elif not assignee_user_ids and self.user_ids:
             assignee_user_ids = self.user_ids.ids
 
         write_vals = {
@@ -793,7 +798,9 @@ class ProjectTask(models.Model):
             write_vals["date_deadline"] = self._fsm_schedule_deadline_value(end_dt_utc)
         if "team_id" in self._fields and team:
             write_vals["team_id"] = team.id
-        if assignee_user_ids and "user_ids" in self._fields:
+        if "user_ids" in self._fields and (
+            assignee_user_ids or slot_engine._availability_source() == "planning"
+        ):
             write_vals["user_ids"] = [(6, 0, assignee_user_ids)]
 
         booking = self.fsm_booking_id.sudo() if self.fsm_booking_id else False
@@ -987,7 +994,12 @@ class ProjectTask(models.Model):
 
         # Prepare assignees
         assignee_user_ids = assignee_user_ids or []
-        if not assignee_user_ids and self.user_ids:
+        slot_engine = self.env["fsm.slot.engine"]
+        if team and slot_engine._availability_source() == "planning":
+            assignee_user_ids = slot_engine.get_team_users_for_interval_utc(
+                team, start_dt_utc, end_dt_utc
+            ).ids
+        elif not assignee_user_ids and self.user_ids:
             assignee_user_ids = self.user_ids.ids
 
         rescheduled_stage = self._fsm_find_stage([

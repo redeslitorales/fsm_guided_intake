@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime, time
+import logging
+
+import pytz
+
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
+
+
+_logger = logging.getLogger(__name__)
 
 class FsmTeam(models.Model):
     _name = "fsm.team"
@@ -42,6 +50,101 @@ class FsmTeam(models.Model):
         string="Capable Task Types",
     )
     shift_ids = fields.One2many("fsm.team.shift", "team_id", string="Shifts")
+
+    def _fsm_roster_employees(self):
+        employees = self.env["hr.employee"]
+        for team in self:
+            employees |= team.member_ids
+            if team.lead_user_id.employee_id:
+                employees |= team.lead_user_id.employee_id
+        return employees
+
+    def _fsm_planning_team_for_employee(self, employee):
+        """Resolve the employee's current legacy team for bridge propagation."""
+        teams = self.search([
+            ("active", "=", True),
+            "|",
+            ("member_ids", "in", employee.id),
+            ("lead_user_id.employee_id", "=", employee.id),
+        ])
+        preferred = teams & self
+        return preferred[:1] or teams[:1]
+
+    def _fsm_sync_impacted_planning_teams(self, employees, effective_date=None):
+        """Apply a static roster edit to Planning from its effective date.
+
+        This is a transition bridge. It never rewrites historical shifts and
+        only changes the dated team assignment; Planning remains the schedule
+        and publication source of truth.
+        """
+        employees = employees.filtered(lambda employee: employee.resource_id)
+        if not employees:
+            return 0
+        role = self.env.ref(
+            "fsm_guided_intake.planning_role_fsm_technician",
+            raise_if_not_found=False,
+        )
+        if not role:
+            return 0
+
+        effective_date = fields.Date.to_date(
+            effective_date
+            or self.env.context.get("fsm_team_effective_date")
+            or fields.Date.context_today(self)
+        )
+        timezone = pytz.timezone(
+            self.env.context.get("tz")
+            or self.env.user.tz
+            or "America/El_Salvador"
+        )
+        effective_start_utc = timezone.localize(
+            datetime.combine(effective_date, time.min)
+        ).astimezone(pytz.UTC).replace(tzinfo=None)
+
+        changed = 0
+        for employee in employees:
+            target_team = self._fsm_planning_team_for_employee(employee)
+            slots = self.env["planning.slot"].sudo().search([
+                ("resource_id", "=", employee.resource_id.id),
+                ("role_id", "=", role.id),
+                ("end_datetime", ">", effective_start_utc),
+            ])
+            to_update = slots.filtered(
+                lambda slot: slot.fsm_team_id != target_team
+            )
+            if to_update:
+                to_update.with_context(
+                    fsm_skip_team_planning_sync=True
+                ).write({"fsm_team_id": target_team.id or False})
+                changed += len(to_update)
+        if changed:
+            _logger.info(
+                "Updated %s technician Planning shift team assignments from %s",
+                changed,
+                effective_date,
+            )
+        return changed
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        teams = super().create(vals_list)
+        if not self.env.context.get("fsm_skip_team_planning_sync"):
+            teams._fsm_sync_impacted_planning_teams(
+                teams._fsm_roster_employees()
+            )
+        return teams
+
+    def write(self, vals):
+        roster_fields = {"member_ids", "lead_user_id", "active"}
+        sync_roster = bool(roster_fields & set(vals)) and not self.env.context.get(
+            "fsm_skip_team_planning_sync"
+        )
+        previous_employees = self._fsm_roster_employees() if sync_roster else self.env["hr.employee"]
+        result = super().write(vals)
+        if sync_roster:
+            impacted_employees = previous_employees | self._fsm_roster_employees()
+            self._fsm_sync_impacted_planning_teams(impacted_employees)
+        return result
 
     @api.depends("lead_user_id", "warehouse_id", "member_ids", "member_ids.name")
     def _compute_name(self):

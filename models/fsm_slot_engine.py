@@ -41,9 +41,21 @@ def _subtract_intervals(window_start, window_end, busy):
     return open_segments
 
 
+def _intersect_interval_lists(left, right):
+    """Return the intersections between two datetime interval lists."""
+    intersections = []
+    for left_start, left_end in _merge_intervals(left):
+        for right_start, right_end in _merge_intervals(right):
+            start = max(left_start, right_start)
+            end = min(left_end, right_end)
+            if end > start:
+                intersections.append((start, end))
+    return _merge_intervals(intersections)
+
+
 class FsmSlotEngine(models.AbstractModel):
     _name = "fsm.slot.engine"
-    _description = "FSM Slot Engine (task-derived availability)"
+    _description = "FSM Slot Engine (provider-derived availability)"
 
     # ---- Time helpers (UTC naive internally) ----
     def _tz_name(self):
@@ -107,39 +119,197 @@ class FsmSlotEngine(models.AbstractModel):
         return (start, end, True)
 
     # ---- Calendars / working windows ----
+    def _availability_source(self):
+        source = self.env["ir.config_parameter"].sudo().get_param(
+            "fsm_guided_intake.availability_source", "calendar"
+        )
+        return source if source in {"calendar", "planning"} else "calendar"
+
     def _get_calendar_for_team(self, team):
         return (
             team.calendar_id
             or getattr(team.lead_user_id, "resource_calendar_id", False)
             or self.env.company.resource_calendar_id
-            or self.env.ref("resource.resource_calendar_std", raise_if_not=False)
+            or self.env.ref(
+                "resource.resource_calendar_std", raise_if_not_found=False
+            )
         )
 
-    def _iter_work_windows_local(self, team, day_date, time_start=None, time_end=None, lead_minutes=0):
+    def _planning_work_windows_by_team_day_local(
+        self, teams, window_start_local, window_end_local
+    ):
+        """Build crew working windows from published technician Planning shifts.
+
+        A Planning shift's ``fsm_team_id`` is the dated team assignment.  All
+        resources rostered to the same team on a date must overlap for the crew
+        to be offered, so a partial individual shift cannot overstate the
+        team's availability.
+        """
+        result = {}
+        role = self.env.ref(
+            "fsm_guided_intake.planning_role_fsm_technician",
+            raise_if_not_found=False,
+        )
+        if not role or not teams:
+            return result
+
+        window_start_utc = self._to_utc_naive(window_start_local)
+        window_end_utc = self._to_utc_naive(window_end_local)
+        slots = self.env["planning.slot"].sudo().search([
+            ("fsm_team_id", "in", teams.ids),
+            ("role_id", "=", role.id),
+            ("state", "=", "published"),
+            ("resource_id", "!=", False),
+            ("user_id", "!=", False),
+            ("start_datetime", "<", window_end_utc),
+            ("end_datetime", ">", window_start_utc),
+        ])
+
+        by_team_day_resource = {}
+        for slot in slots:
+            local_start = max(
+                self._to_local_naive(slot.start_datetime), window_start_local
+            )
+            local_end = min(
+                self._to_local_naive(slot.end_datetime), window_end_local
+            )
+            current_date = local_start.date()
+            while current_date <= local_end.date():
+                day_start = datetime.combine(current_date, time.min)
+                next_day = day_start + timedelta(days=1)
+                segment_start = max(local_start, day_start)
+                segment_end = min(local_end, next_day)
+                if segment_end > segment_start:
+                    key = (slot.fsm_team_id.id, current_date, slot.resource_id.id)
+                    by_team_day_resource.setdefault(key, []).append(
+                        (segment_start, segment_end)
+                    )
+                current_date += timedelta(days=1)
+
+        resources_by_team_day = {}
+        for (team_id, day_date, resource_id), intervals in by_team_day_resource.items():
+            resources_by_team_day.setdefault((team_id, day_date), {})[resource_id] = (
+                _merge_intervals(intervals)
+            )
+
+        for team_day, resource_intervals in resources_by_team_day.items():
+            crew_windows = None
+            for intervals in resource_intervals.values():
+                crew_windows = (
+                    intervals
+                    if crew_windows is None
+                    else _intersect_interval_lists(crew_windows, intervals)
+                )
+                if not crew_windows:
+                    break
+            result[team_day] = crew_windows or []
+        return result
+
+    def _planning_team_users_for_interval_utc(
+        self, team, start_datetime_utc, end_datetime_utc
+    ):
+        """Return users rostered in Planning for the complete appointment."""
+        users = self.env["res.users"]
+        role = self.env.ref(
+            "fsm_guided_intake.planning_role_fsm_technician",
+            raise_if_not_found=False,
+        )
+        if not role or not team or not start_datetime_utc or not end_datetime_utc:
+            return users
+        slots = self.env["planning.slot"].sudo().search([
+            ("fsm_team_id", "=", team.id),
+            ("role_id", "=", role.id),
+            ("state", "=", "published"),
+            ("user_id", "!=", False),
+            ("start_datetime", "<", end_datetime_utc),
+            ("end_datetime", ">", start_datetime_utc),
+        ])
+        intervals_by_user = {}
+        users_by_id = {}
+        for slot in slots:
+            users_by_id[slot.user_id.id] = slot.user_id
+            intervals_by_user.setdefault(slot.user_id.id, []).append(
+                (slot.start_datetime, slot.end_datetime)
+            )
+        for user_id, intervals in intervals_by_user.items():
+            if any(
+                interval_start <= start_datetime_utc
+                and interval_end >= end_datetime_utc
+                for interval_start, interval_end in _merge_intervals(intervals)
+            ):
+                users |= users_by_id[user_id]
+        return users
+
+    def get_team_users_for_interval_utc(
+        self, team, start_datetime_utc, end_datetime_utc
+    ):
+        """Resolve task assignees from the active availability provider."""
+        if self._availability_source() == "planning":
+            return self._planning_team_users_for_interval_utc(
+                team, start_datetime_utc, end_datetime_utc
+            )
+        return self._get_team_users(team)
+
+    def _iter_work_windows_local(
+        self,
+        team,
+        day_date,
+        time_start=None,
+        time_end=None,
+        lead_minutes=0,
+        planning_windows_by_team_day=None,
+    ):
         """
         Yield (shift_start_local, shift_end_local) for the team on a given day (local naive).
         """
-        cal = self._get_calendar_for_team(team)
-        if not cal:
-            return
-        weekday_str = str(day_date.weekday())
-        attendances = cal.attendance_ids.filtered(lambda a: not a.display_type and a.dayofweek == weekday_str)
-        windows = []
-        for att in attendances:
-            hour_from = att.hour_from
-            hour_to = att.hour_to
-            if time_start is not None:
-                hour_from = max(hour_from, time_start)
-            if time_end is not None:
-                hour_to = min(hour_to, time_end)
-            day_start = datetime.combine(day_date, time.min)
-            shift_start = day_start + timedelta(hours=hour_from, minutes=lead_minutes)
-            shift_end = day_start + timedelta(hours=hour_to)
-            if shift_end > shift_start:
-                windows.append((shift_start, shift_end))
+        day_start = datetime.combine(day_date, time.min)
+        if planning_windows_by_team_day is not None:
+            source_windows = planning_windows_by_team_day.get(
+                (team.id, day_date), []
+            )
+            windows = []
+            for source_start, source_end in source_windows:
+                shift_start = source_start
+                shift_end = source_end
+                if time_start is not None:
+                    shift_start = max(
+                        shift_start, day_start + timedelta(hours=time_start)
+                    )
+                if time_end is not None:
+                    shift_end = min(
+                        shift_end, day_start + timedelta(hours=time_end)
+                    )
+                shift_start += timedelta(minutes=lead_minutes)
+                if shift_end > shift_start:
+                    windows.append((shift_start, shift_end))
+        else:
+            cal = self._get_calendar_for_team(team)
+            if not cal:
+                return
+            weekday_str = str(day_date.weekday())
+            attendances = cal.attendance_ids.filtered(
+                lambda a: not a.display_type and a.dayofweek == weekday_str
+            )
+            windows = []
+            for att in attendances:
+                hour_from = att.hour_from
+                hour_to = att.hour_to
+                if time_start is not None:
+                    hour_from = max(hour_from, time_start)
+                if time_end is not None:
+                    hour_to = min(hour_to, time_end)
+                shift_start = day_start + timedelta(
+                    hours=hour_from, minutes=lead_minutes
+                )
+                shift_end = day_start + timedelta(hours=hour_to)
+                if shift_end > shift_start:
+                    windows.append((shift_start, shift_end))
         if not windows:
             return
-        yield (min(start for start, _end in windows), max(end for _start, end in windows))
+        if planning_windows_by_team_day is not None:
+            yield from _merge_intervals(windows)
+        else:
+            yield (min(start for start, _end in windows), max(end for _start, end in windows))
 
     def _iter_priority_limited_work_windows_local(
         self,
@@ -149,6 +319,7 @@ class FsmSlotEngine(models.AbstractModel):
         time_end=None,
         lead_minutes=0,
         priority_windows=None,
+        planning_windows_by_team_day=None,
     ):
         for priority_time_start, priority_time_end in self._priority_windows_for_day(priority_windows, day_date):
             effective_time_start, effective_time_end, has_overlap = self._intersect_hour_windows(
@@ -165,6 +336,7 @@ class FsmSlotEngine(models.AbstractModel):
                 time_start=effective_time_start,
                 time_end=effective_time_end,
                 lead_minutes=lead_minutes,
+                planning_windows_by_team_day=planning_windows_by_team_day,
             )
 
     # ---- Busy intervals from tasks (team-first with fallback to user overlap) ----
@@ -410,6 +582,13 @@ class FsmSlotEngine(models.AbstractModel):
             buffer_before_mins=buffer_before_mins,
             buffer_after_mins=buffer_after_mins,
         )
+        planning_windows_by_team_day = None
+        if self._availability_source() == "planning":
+            planning_windows_by_team_day = (
+                self._planning_work_windows_by_team_day_local(
+                    teams, start_dt_local, search_end_local
+                )
+            )
 
         slots = []
         duration_minutes = max(int(round((needed_hours or 0.0) * 60.0)), 1)
@@ -429,6 +608,7 @@ class FsmSlotEngine(models.AbstractModel):
                     time_end=time_end,
                     lead_minutes=lead_minutes,
                     priority_windows=priority_windows,
+                    planning_windows_by_team_day=planning_windows_by_team_day,
                 ):
                     # enforce start boundary
                     shift_start_local_eff = max(shift_start_local, start_dt_local)

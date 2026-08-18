@@ -19,18 +19,34 @@
         <field name="model">fsm.team</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <button name="%(planning.planning_action_schedule_by_resource)d"
+                            type="action" string="Open Technician Planning"
+                            class="btn-primary"/>
+                </header>
                 <sheet>
+                    <div class="alert alert-info" role="alert">
+                        Technician membership and working times are managed as
+                        dated, published shifts in Planning. This record keeps
+                        the operational team identity, capabilities, warehouse,
+                        vehicles, and reporting configuration.
+                    </div>
                     <group>
                         <field name="name"/>
                         <field name="active"/>
                         <field name="warehouse_id"/>
-                        <field name="calendar_id"/>
                         <field name="skill_level"/>
                         <field name="lead_user_id"/>
                     </group>
                     <notebook>
-                        <page string="Members">
-                            <field name="member_ids"/>
+                        <page string="Planning Roster Bridge">
+                            <div class="alert alert-warning" role="alert">
+                                During the transition, changes here propagate
+                                technician-team assignments to Planning from
+                                the change date forward. Published Planning
+                                shifts remain the availability source.
+                            </div>
+                            <field name="member_ids" string="Default Technicians"/>
                         </page>
                         <page string="Vehicles">
                             <field name="vehicle_ids"/>

@@ -4,6 +4,21 @@ from odoo import fields, models
 class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
 
+    fsm_availability_source = fields.Selection(
+        [
+            ("calendar", "Field Service / Resource Calendar (Legacy)"),
+            ("planning", "Published Planning Shifts"),
+        ],
+        string="Technician Availability Source",
+        config_parameter="fsm_guided_intake.availability_source",
+        default="calendar",
+        required=True,
+        help=(
+            "Published Planning shifts become the roster source when Planning "
+            "is selected. Draft shifts never make a team available."
+        ),
+    )
+
     fsm_auto_invoice_on_stage_done = fields.Boolean(
         string="Auto-create invoice draft when task reaches Done stage",
         config_parameter="fsm_guided_intake.auto_invoice_on_stage_done",

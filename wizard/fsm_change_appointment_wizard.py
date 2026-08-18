@@ -606,10 +606,15 @@ class FsmChangeAppointmentWizard(models.TransientModel):
         end_dt_utc = self._to_utc(end_dt)
 
         # Prepare assignees
-        assignee_user_ids = []
-        if self.user_ids:
+        slot_engine = self.env["fsm.slot.engine"]
+        if team and slot_engine._availability_source() == "planning":
+            assignee_user_ids = slot_engine.get_team_users_for_interval_utc(
+                team, start_dt_utc, end_dt_utc
+            ).ids
+        elif self.user_ids:
             assignee_user_ids = self.user_ids.ids
         elif team:
+            assignee_user_ids = []
             if team.lead_user_id:
                 assignee_user_ids.append(team.lead_user_id.id)
             member_users = team.member_ids.mapped('user_id').filtered(lambda u: u)

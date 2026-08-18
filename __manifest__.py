@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Cabal FSM Customizations",
-    "version": "17.0.2.0.34",
+    "version": "17.0.2.0.35",
     "author": "Bálsamo Labs SAS",
     "maintainer": "Bálsamo Labs SAS",
     "category": "Services/Field Service",
@@ -17,6 +17,7 @@
         "views/fsm_task_type_views.xml",
         "views/fsm_task_priority_slot_views.xml",
         "views/fsm_team_views.xml",
+        "views/planning_slot_views.xml",
         "views/fsm_capacity_views.xml",
         "views/fsm_day_reservation_views.xml",
         "views/fsm_booking_views.xml",

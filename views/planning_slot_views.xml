@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="planning_slot_form_fsm_team" model="ir.ui.view">
+        <field name="name">planning.slot.form.fsm.team</field>
+        <field name="model">planning.slot</field>
+        <field name="inherit_id" ref="planning.planning_view_form"/>
+        <field name="arch" type="xml">
+            <field name="role_id" position="after">
+                <field name="fsm_team_id"
+                       options="{'no_create': True, 'no_open': True}"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="planning_slot_tree_fsm_team" model="ir.ui.view">
+        <field name="name">planning.slot.tree.fsm.team</field>
+        <field name="model">planning.slot</field>
+        <field name="inherit_id" ref="planning.planning_view_tree"/>
+        <field name="arch" type="xml">
+            <field name="role_id" position="after">
+                <field name="fsm_team_id" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="planning_slot_search_fsm_team" model="ir.ui.view">
+        <field name="name">planning.slot.search.fsm.team</field>
+        <field name="model">planning.slot</field>
+        <field name="inherit_id" ref="planning.planning_view_search_base"/>
+        <field name="arch" type="xml">
+            <field name="role_id" position="after">
+                <field name="fsm_team_id"/>
+            </field>
+            <filter name="group_by_role" position="after">
+                <filter name="group_by_fsm_team" string="Technician Team"
+                        context="{'group_by': 'fsm_team_id'}"/>
+            </filter>
+        </field>
+    </record>
+</odoo>

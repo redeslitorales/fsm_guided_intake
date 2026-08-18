@@ -35,6 +35,17 @@ class PlanningSlot(models.Model):
         readonly=True,
         ondelete="set null",
     )
+    fsm_team_id = fields.Many2one(
+        "fsm.team",
+        string="Technician Team",
+        copy=True,
+        index=True,
+        ondelete="restrict",
+        help=(
+            "The dated technician-team assignment for this shift. Published "
+            "shifts with the Técnico role define team availability."
+        ),
+    )
 
     _sql_constraints = [
         (
@@ -43,6 +54,9 @@ class PlanningSlot(models.Model):
             "A Planning shift has already been generated for this employee and date.",
         ),
     ]
+
+    def _get_fields_breaking_publication(self):
+        return super()._get_fields_breaking_publication() + ["fsm_team_id"]
 
     @api.model
     def _fsm_technician_employees(self):
@@ -62,6 +76,21 @@ class PlanningSlot(models.Model):
     @api.model
     def _fsm_schedule_key_for(self, employee, schedule_date):
         return "fsm-employee-schedule-%s-%s" % (employee.id, schedule_date.isoformat())
+
+    @api.model
+    def _fsm_seed_team_by_employee(self, employees):
+        """Bootstrap shift teams from the legacy static roster.
+
+        Once a shift has a team, synchronization preserves it. Planning is then
+        authoritative and planners may move a draft shift to another team.
+        """
+        result = {}
+        teams = self.env["fsm.team"].sudo().search([("active", "=", True)])
+        for team in teams:
+            team_employees = team.member_ids | team.lead_user_id.employee_id
+            for employee in team_employees & employees:
+                result.setdefault(employee.id, team)
+        return result
 
     @api.model
     def _fsm_calendar_shift_bounds(self, employee, schedule_date):
@@ -121,6 +150,7 @@ class PlanningSlot(models.Model):
         role = self._fsm_technician_role().sudo()
         employees = self._fsm_technician_employees().sudo()
         self._fsm_assign_technician_role(employees, role)
+        seed_team_by_employee = self._fsm_seed_team_by_employee(employees)
 
         existing_slots = self.sudo().search([
             ("fsm_employee_schedule_generated", "=", True),
@@ -131,6 +161,7 @@ class PlanningSlot(models.Model):
         desired_keys = set()
         created = self.browse()
         updated = self.browse()
+        protected = self.browse()
 
         current_date = date_start
         while current_date <= date_end:
@@ -156,19 +187,34 @@ class PlanningSlot(models.Model):
                 }
                 slot = existing_by_key.get(key)
                 if slot:
-                    slot.write(values)
-                    updated |= slot
+                    if slot.state == "published":
+                        if not slot.fsm_team_id and seed_team_by_employee.get(employee.id):
+                            slot.write({
+                                "fsm_team_id": seed_team_by_employee[employee.id].id,
+                            })
+                        protected |= slot
+                    else:
+                        if not slot.fsm_team_id and seed_team_by_employee.get(employee.id):
+                            values["fsm_team_id"] = seed_team_by_employee[employee.id].id
+                        slot.write(values)
+                        updated |= slot
                 else:
+                    if seed_team_by_employee.get(employee.id):
+                        values["fsm_team_id"] = seed_team_by_employee[employee.id].id
                     created |= self.sudo().create(values)
             current_date += timedelta(days=1)
 
-        stale = existing_slots.filtered(lambda slot: slot.fsm_schedule_key not in desired_keys)
+        stale = existing_slots.filtered(
+            lambda slot: slot.state == "draft"
+            and slot.fsm_schedule_key not in desired_keys
+        )
         removed_count = len(stale)
         stale.unlink()
         return {
             "created": len(created),
             "updated": len(updated),
             "removed": removed_count,
+            "protected": len(protected),
             "employees": len(employees),
             "date_start": date_start,
             "date_end": date_end,
