@@ -441,7 +441,11 @@ class FsmChangeAppointmentWizard(models.TransientModel):
                 res['planned_hours'] = task.allocated_hours
             else:
                 res['planned_hours'] = task.fsm_default_planned_hours or 1.0 if hasattr(task, 'fsm_default_planned_hours') else 1.0
-            search_start = task.planned_date_begin or fields.Datetime.now()
+            # A reschedule must never search from an appointment that is
+            # already in the past. Doing so creates a 30-day search horizon
+            # entirely before the current published Planning roster.
+            now_utc = fields.Datetime.now()
+            search_start = max(task.planned_date_begin or now_utc, now_utc)
             res['search_start_dt'] = fields.Datetime.context_timestamp(self, search_start).replace(tzinfo=None)
             if task.fsm_booking_id:
                 res['team_id'] = task.fsm_booking_id.team_id.id

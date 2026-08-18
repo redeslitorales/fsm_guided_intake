@@ -27,6 +27,10 @@ class TestInitialScheduling(TransactionCase):
             "fold": True,
             "project_ids": [(4, cls.project.id)],
         })
+        cls.planned_stage = cls.env["project.task.type"].create({
+            "name": "Planned",
+            "project_ids": [(4, cls.project.id)],
+        })
         cls.task_type = cls.env["fsm.task.type"].create({
             "name": "Initial Installation Appointment",
             "project_id": cls.project.id,
@@ -98,3 +102,45 @@ class TestInitialScheduling(TransactionCase):
         self.assertEqual(replacement.sale_order_id, order)
         self.assertEqual(replacement.fsm_subscription_id, order)
         self.assertEqual(replacement.stage_id, self.scheduled_stage)
+
+    def test_reschedule_search_does_not_start_from_past_appointment(self):
+        task = self._new_task(
+            stage_id=self.planned_stage.id,
+            planned_date_begin=fields.Datetime.now() - timedelta(days=90),
+        )
+        wizard_model = self.env["fsm.change.appointment.wizard"].with_context(
+            active_id=task.id,
+            active_model="project.task",
+            tz="America/El_Salvador",
+        )
+        before_utc = fields.Datetime.now()
+
+        defaults = wizard_model.default_get(list(wizard_model._fields))
+
+        before_local = fields.Datetime.context_timestamp(
+            wizard_model, before_utc
+        ).replace(tzinfo=None)
+        self.assertGreaterEqual(
+            fields.Datetime.to_datetime(defaults["search_start_dt"]),
+            before_local,
+        )
+
+    def test_guided_reschedule_search_does_not_start_from_past_appointment(self):
+        task = self._new_task(
+            planned_date_begin=fields.Datetime.now() - timedelta(days=90),
+        )
+        wizard_model = self.env["fsm.task.intake.wizard"].with_context(
+            reschedule_task_id=task.id,
+            tz="America/El_Salvador",
+        )
+        before_utc = fields.Datetime.now()
+
+        defaults = wizard_model.default_get(list(wizard_model._fields))
+
+        before_local = fields.Datetime.context_timestamp(
+            wizard_model, before_utc
+        ).replace(tzinfo=None)
+        self.assertGreaterEqual(
+            fields.Datetime.to_datetime(defaults["search_start_dt"]),
+            before_local,
+        )

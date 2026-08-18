@@ -313,7 +313,8 @@ class FsmTaskIntakeWizard(models.TransientModel):
                 res["service_address_id"] = task.fsm_service_address_id.id if "fsm_service_address_id" in task._fields else False
                 res["task_type_id"] = task.fsm_task_type_id.id if "fsm_task_type_id" in task._fields else False
                 res["planned_hours"] = (task.planned_hours if "planned_hours" in task._fields else False) or task.fsm_default_planned_hours or 1.0
-                search_start = task.planned_date_begin or fields.Datetime.now()
+                now_utc = fields.Datetime.now()
+                search_start = max(task.planned_date_begin or now_utc, now_utc)
                 res["search_start_dt"] = fields.Datetime.context_timestamp(self, search_start).replace(tzinfo=None)
                 # Do not prefill team on reschedule; keep all qualified teams available
                 res["team_id"] = False
